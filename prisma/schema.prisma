@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Workspace {
+  id              String   @id @default(cuid())
+  name            String   @default("My UGC Workspace")
+  slug            String   @unique
+  plan            String   @default("free") // free | pro
+  stripeCustomerId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  members         WorkspaceMember[]
+  campaigns       Campaign[]
+  videos          Video[]
+  weeklyLogs      WeeklyLog[]
+  configs         Config[]
+  invites         Invite[]
+}
+
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String   // Supabase Auth UID
+  role        String   @default("member") // admin | member | viewer
+  createdAt   DateTime @default(now())
+
+  @@unique([workspaceId, userId])
+}
+
+model Invite {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  email       String
+  role        String    @default("member")
+  code        String    @unique
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model Campaign {
+  id         String   @id @default(cuid())
+  brandName  String
+  platform   String   @default("both")
+  rateType   String   @default("fixed")
+  rateAmount Float    @default(30)
+  status     String   @default("active")
+  startDate  String?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  workspaceId String
+  workspace  Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  videos     Video[]
+  weeklyLogs WeeklyLog[]
+}
+
+model Video {
+  id               String   @id @default(cuid())
+  title            String
+  fileName         String?
+  platformVideoId  String?
+  platform         String   @default("tiktok")
+  postedAt         String?
+  status           String   @default("posted")
+
+  views            Int      @default(0)
+  likes            Int      @default(0)
+  comments         Int      @default(0)
+  shares           Int      @default(0)
+  watchTime        String?
+  rpm              Float?
+  earnings         Float    @default(0)
+
+  hookType         String?
+  niche            String?
+  format           String?
+  hasBeforeAfter   Boolean  @default(false)
+  hasTextOverlay   Boolean  @default(false)
+  durationBucket   String?
+  postedTimeBucket String?
+
+  aiScore          Float?
+  aiTag            String?
+
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  campaignId  String?
+  campaign    Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+}
+
+model WeeklyLog {
+  id              String   @id @default(cuid())
+  weekStart       String
+  videosPosted    Int      @default(0)
+  totalViews      Int      @default(0)
+  totalEarningsUsd Float  @default(0)
+  netEarningsIdr  Float   @default(0)
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  campaignId  String?
+  campaign    Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+}
+
+model Config {
+  key   String
+  value String
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @updatedAt
+
+  @@id([workspaceId, key])
+}
