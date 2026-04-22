@@ -1,18 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { createClient } from '@/lib/supabase-server';
 
-export async function GET(req: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() { return req.cookies.getAll(); },
-      setAll() {},
-    },
-  });
-
+export async function GET() {
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 

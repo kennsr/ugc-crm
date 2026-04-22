@@ -1,10 +1,10 @@
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+'use client';
 
-// Client-safe: only anon key, data accessed by the authenticated user
-// NEVER contains SERVICE_ROLE_KEY
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+import { createBrowserClient } from '@supabase/ssr';
 
 export function createClient() {
-  return createSupabaseClient(supabaseUrl, supabaseAnonKey);
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+  );
 }

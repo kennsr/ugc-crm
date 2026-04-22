@@ -1,41 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
+export async function GET(request: NextRequest) {
+  const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
   const next = searchParams.get('next') ?? '/';
 
-  if (!code) return NextResponse.redirect(new URL('/login', req.url));
+  let supabaseResponse = NextResponse.redirect(`${origin}${next}`);
 
-  const supabaseResponse = NextResponse.redirect(new URL(next, req.url));
+  if (code) {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) => {
+              request.cookies.set(name, value);
+            });
+            cookiesToSet.forEach(({ name, value, options }) => {
+              supabaseResponse.cookies.set(name, value);
+            });
+          },
+        },
+      }
+    );
 
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return req.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          supabaseResponse.cookies.set(name, value, {
-            httpOnly: options?.httpOnly ?? true,
-            secure: options?.secure ?? true,
-            sameSite: (options?.sameSite as 'strict' | 'lax' | 'none') ?? 'lax',
-            maxAge: options?.maxAge,
-            path: options?.path ?? '/',
-          });
-        });
-      },
-    },
-  });
-
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-  if (error) {
-    return NextResponse.redirect(new URL('/login', req.url));
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error && data.user) {
+      await fetch(`${origin}/api/auth/workspace`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: data.user.id }),
+      });
+    }
   }
 
   return supabaseResponse;

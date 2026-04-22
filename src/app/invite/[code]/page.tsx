@@ -28,7 +28,6 @@ export default function InvitePage() {
     setAccepting(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      // Redirect to signup with invite code stored
       router.push(`/signup?invite=${code}`);
       return;
     }
@@ -48,40 +47,40 @@ export default function InvitePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
-        <p className="text-xs text-[#666]">Loading invite...</p>
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
+        <p className="text-[11px] text-[var(--text-muted)]">Loading invite...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
         <div className="text-center p-6">
-          <p className="text-[#FF6B6B] text-lg font-bold">Invalid Invite</p>
-          <p className="text-xs text-[#666] mt-2">{error}</p>
-          <a href="/login" className="text-xs text-[#00FF88] mt-4 inline-block">Go to login</a>
+          <p className="text-[var(--danger)] text-lg font-semibold">Invalid Invite</p>
+          <p className="text-[var(--text-muted)] text-[11px] mt-2">{error}</p>
+          <a href="/login" className="text-[var(--accent)] text-[11px] mt-4 inline-block">Go to login</a>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
       <div className="w-full max-w-sm p-6 text-center">
         <div className="mb-6">
-          <p className="text-[10px] text-[#666] uppercase tracking-widest">You&apos;re invited to</p>
-          <h1 className="text-xl font-bold text-[#00FF88] mt-2">{info?.workspaceName}</h1>
-          <p className="text-xs text-[#666] mt-1">Role: <span className="text-white">{info?.role}</span></p>
+          <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest">You&apos;re invited to</p>
+          <h1 className="text-xl font-semibold text-[var(--accent)] mt-2">{info?.workspaceName}</h1>
+          <p className="text-[var(--text-muted)] text-[11px] mt-1">Role: <span className="text-[var(--text-primary)]">{info?.role}</span></p>
         </div>
         <button
           onClick={acceptInvite}
           disabled={accepting}
-          className="w-full bg-[#00FF88] text-[#0a0a0f] text-xs font-bold p-3 rounded hover:bg-[#00cc6e] transition-colors disabled:opacity-30"
+          className="btn btn-primary w-full"
         >
           {accepting ? 'Joining...' : 'Accept Invite & Join'}
         </button>
-        <p className="text-[10px] text-[#444] mt-4">
+        <p className="text-[10px] text-[var(--text-muted)] mt-4">
           You&apos;ll be signed in and redirected to the dashboard.
         </p>
       </div>

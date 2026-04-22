@@ -59,6 +59,7 @@ model Campaign {
   status     String   @default("active")
   startDate  String?
   notes      String?
+  driveFolderId String?  // Google Drive folder ID
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -97,6 +98,8 @@ model Video {
   aiTag            String?
 
   notes            String?
+  driveFileId      String?  // Google Drive file ID
+  driveFolderId    String?  // Google Drive folder ID
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
