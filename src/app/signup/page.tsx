@@ -57,9 +57,6 @@ export default function SignupPage() {
     <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
       <div className="w-full max-w-sm p-6">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-lg bg-[var(--accent)] mx-auto mb-4 flex items-center justify-center">
-            <span className="text-lg font-bold text-black">U</span>
-          </div>
           <h1 className="text-xl font-semibold tracking-[0.06em] text-[var(--text-primary)]">UGC ENGINE</h1>
           <p className="text-[11px] text-[var(--text-muted)] mt-1">Create your workspace</p>
         </div>

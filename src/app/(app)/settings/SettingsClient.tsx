@@ -1,8 +1,11 @@
 'use client';
 import { createBrowserClient } from '@supabase/ssr';
 import { useEffect, useState } from "react";
+import dynamic from 'next/dynamic';
 
 type ConfigMap = Record<string, string>;
+
+const DriveConnect = dynamic(() => import('@/components/DriveConnect'), { ssr: false });
 
 interface Props {
   supabaseUrl: string;
@@ -46,6 +49,8 @@ export default function SettingsClient({ supabaseUrl, supabaseAnonKey }: Props) 
   return (
     <div className="p-6 space-y-6 max-w-2xl">
       <h1>Settings</h1>
+
+      <DriveConnect />
 
       <form onSubmit={handleSave} className="space-y-4">
         <div className="card card-pad space-y-4">
@@ -103,23 +108,10 @@ export default function SettingsClient({ supabaseUrl, supabaseAnonKey }: Props) 
       </form>
 
       <div className="card card-pad">
-        <h3 className="mb-2">Account</h3>
-        <button
-          onClick={handleLogout}
-          className="btn text-[var(--danger)] border-[var(--danger)]"
-        >
+        <h3 className="mb-3">Account</h3>
+        <button onClick={handleLogout} className="btn btn-secondary">
           Sign Out
         </button>
-      </div>
-
-      <div className="card card-pad">
-        <h3 className="mb-2">System Info</h3>
-        <ul className="text-[11px] text-[var(--text-muted)] space-y-1">
-          <li>Database: Supabase (PostgreSQL)</li>
-          <li>Host: Vercel</li>
-          <li>Build: April 23, 2026</li>
-          <li>Channel: Telegram</li>
-        </ul>
       </div>
     </div>
   );
