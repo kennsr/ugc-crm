@@ -20,7 +20,7 @@ const menuItems = [
   { href: "/videos", label: "Videos", icon: Video },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/income", label: "Income", icon: DollarSign },
-  { href: "/import", label: "Import", icon: Upload },
+  { href: "/import", label: "Import/Export", icon: Upload },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -37,7 +37,13 @@ export default function Sidebar() {
 
   return (
     <aside className="w-56 bg-[var(--bg-primary)] border-r border-[var(--border)] flex flex-col fixed h-full">
-      <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-3">
+      <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2.5">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" className="shrink-0" width="22" height="22">
+          <rect width="32" height="32" rx="6" fill="#0a0a0f"/>
+          <path d="M12 10v12l10-6-10-6z" fill="#00FF88"/>
+          <circle cx="24" cy="8" r="4" fill="#00FF88" opacity="0.3"/>
+          <circle cx="24" cy="8" r="2" fill="#00FF88"/>
+        </svg>
         <div className="leading-tight">
           <h1 className="text-[13px] font-semibold tracking-[0.06em] text-[var(--text-primary)]">UGC ENGINE</h1>
           <p className="text-[9px] text-[var(--text-muted)]">Creator Intelligence</p>

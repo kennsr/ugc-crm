@@ -114,16 +114,19 @@ export default function ImportPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-2xl">
-      <div>
-        <h1>Import Spreadsheet</h1>
-        <p className="text-[var(--text-muted)] text-[11px] mt-1">
-          Upload your UGC_Engine v1.0 xlsx — Video, Account, and Finance data will be imported into the CRM.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1>Import / Export</h1>
+          <p className="text-[var(--text-muted)] text-[11px] mt-1">
+            Upload a spreadsheet to import data, or export your CRM data as an xlsx file.
+          </p>
+        </div>
+        <a href="/api/import/export" className="btn btn-secondary text-[11px]">Export Data</a>
       </div>
 
       <form onSubmit={handleUpload} className="card card-pad space-y-4">
         <div>
-          <label className="text-[var(--text-muted)] text-[11px] block mb-2">Select .xlsx file</label>
+          <label className="text-[var(--text-muted)] text-[11px] block mb-2">Upload .xlsx file</label>
           <input
             type="file"
             accept=".xlsx"
@@ -131,9 +134,14 @@ export default function ImportPage() {
             className="text-[11px]"
           />
         </div>
-        <button disabled={!file || loading} type="submit" className="btn btn-primary">
-          {loading ? "Importing..." : "Run Import"}
-        </button>
+        <div className="flex items-center gap-3">
+          <button disabled={!file || loading} type="submit" className="btn btn-primary">
+            {loading ? "Importing..." : "Run Import"}
+          </button>
+          <a href="/api/import/template" download className="btn btn-ghost text-[var(--text-muted)] text-[11px]">
+            Download Template
+          </a>
+        </div>
       </form>
 
       {result && !loading && (
@@ -181,12 +189,19 @@ export default function ImportPage() {
       <div className="card card-pad">
         <h3 className="mb-2">What gets imported</h3>
         <ul className="text-[11px] text-[var(--text-muted)] space-y-1">
-          <li>Videos — title, file name, campaign, posted date, status</li>
-          <li>Campaigns — auto-created from Account sheet</li>
-          <li>Finance totals — income, expense from Finance sheet</li>
-          <li>Performance data — not in spreadsheet, must be added manually per video</li>
-          <li>AI tags — will be generated after 5+ videos have performance data</li>
+          <li><strong>Videos</strong> — Name, File Name, Campaign, Status, Uploaded At, Earnings, Notes (from <em>Videos</em> sheet)</li>
+          <li><strong>Campaigns</strong> — auto-created from Account sheet</li>
+          <li><strong>Finance totals</strong> — income and expense from Finance sheet</li>
+          <li>Performance data — views, likes, etc. must be added manually per video</li>
+          <li>AI tags — generated after 5+ videos have performance data</li>
         </ul>
+        <p className="text-[10px] text-[var(--text-muted)] mt-3">
+          Don&apos;t have a file?{" "}
+          <a href="/api/import/template" download className="text-[var(--accent)] underline">
+            Download the template
+          </a>{" "}
+          to get started.
+        </p>
       </div>
     </div>
   );
