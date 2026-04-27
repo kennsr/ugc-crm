@@ -2,39 +2,86 @@
 import { useEffect, useState } from "react";
 import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase';
+import { Camera } from 'lucide-react';
+import { useInvalidateProfile, useProfile } from '@/lib/queries/profile';
+import { useConfig, useSaveAllConfig } from '@/lib/queries/config';
 import { DEFAULT_USD_IDR_RATE, DEFAULT_EDITOR_RATE } from '@/lib/const/default';
-
-type ConfigMap = Record<string, string>;
 
 const DriveConnect = dynamic(() => import('@/components/DriveConnect'), { ssr: false });
 
 export default function SettingsClient() {
-  const [config, setConfig] = useState<ConfigMap>({});
+  const { data: config = {} } = useConfig();
+  const saveAllConfig = useSaveAllConfig();
   const [form, setForm] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  const { data: profile } = useProfile();
+  const invalidateProfile = useInvalidateProfile();
+  const [profileName, setProfileName] = useState('');
+  const [profileAvatar, setProfileAvatar] = useState('');
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [profileError, setProfileError] = useState('');
 
   const supabase = createClient();
 
   useEffect(() => {
-    fetch("/api/config").then((r) => r.json()).then((c) => {
-      setConfig(c);
-      setForm(c);
-    });
-  }, []);
+    setForm(config);
+  }, [config]);
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    for (const [key, value] of Object.entries(form)) {
-      await fetch("/api/config", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key, value }) });
+  useEffect(() => {
+    if (profile) {
+      setProfileName(profile.fullName ?? '');
+      setProfileAvatar(profile.avatarUrl ?? '');
     }
-    const updated = await fetch("/api/config").then((r) => r.json());
-    setConfig(updated);
-    setForm(updated);
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  }, [profile]);
+
+  function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    const merged = { ...config, ...form };
+    saveAllConfig.mutate(merged, {
+      onSuccess: () => {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      },
+    });
+  }
+
+  async function uploadAvatar(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setProfileSaving(true);
+    setProfileError('');
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch("/api/profile/avatar", { method: "POST", body: fd });
+    const data = await res.json();
+    if (res.ok) {
+      setProfileAvatar(data.avatarUrl);
+      setProfileSaved(true);
+      invalidateProfile();
+      setTimeout(() => setProfileSaved(false), 2000);
+    } else {
+      setProfileError(data.error || 'Upload failed');
+    }
+    setProfileSaving(false);
+  }
+
+  async function saveProfile() {
+    setProfileSaving(true);
+    const res = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fullName: profileName, avatarUrl: profileAvatar }),
+    });
+    const updated = await res.json();
+    if (res.ok) {
+      setProfileAvatar(updated.avatarUrl);
+      invalidateProfile();
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 2000);
+    }
+    setProfileSaving(false);
   }
 
   async function handleLogout() {
@@ -42,11 +89,65 @@ export default function SettingsClient() {
     window.location.href = '/login';
   }
 
+  const initials = profileName
+    ? profileName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    : profile?.email?.[0]?.toUpperCase() ?? '?';
+
   return (
     <div className="p-6 space-y-6 max-w-2xl">
       <h1>Settings</h1>
 
       <DriveConnect />
+
+      {/* Profile */}
+      <div className="card card-pad space-y-4">
+        <h3>Profile</h3>
+        <div className="flex items-start gap-4">
+          <div className="shrink-0">
+            <label className="cursor-pointer block relative group">
+              {profileAvatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profileAvatar}
+                  alt="Avatar"
+                  className="w-16 h-16 rounded-full object-cover border border-[var(--border)]"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-[var(--bg-tertiary)] border border-[var(--border)] flex items-center justify-center">
+                  <span className="text-[18px] font-semibold text-[var(--text-secondary)]">{initials}</span>
+                </div>
+              )}
+              <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Camera size={16} className="text-white" />
+              </div>
+              <input type="file" accept="image/*" className="sr-only" onChange={uploadAvatar} />
+            </label>
+          </div>
+          <div className="flex-1 grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[var(--text-muted)] text-[11px] block mb-1">Display Name</label>
+              <input
+                className="input"
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                placeholder="Your name"
+              />
+            </div>
+            <div>
+              <label className="text-[var(--text-muted)] text-[11px] block mb-1">Email</label>
+              <input className="input bg-[var(--bg-tertiary)] cursor-not-allowed" value={profile?.email ?? ''} readOnly />
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <button onClick={saveProfile} disabled={profileSaving} className="btn btn-primary">
+            {profileSaving ? "Saving..." : "Save Profile"}
+          </button>
+          {profileSaved && <span className="text-[11px] text-[var(--accent)]">Saved</span>}
+          {profileError && <span className="text-[11px] text-[var(--danger)]">{profileError}</span>}
+        </div>
+      </div>
 
       <form onSubmit={handleSave} className="space-y-4">
         <div className="card card-pad space-y-4">
@@ -96,8 +197,8 @@ export default function SettingsClient() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button type="submit" disabled={saving} className="btn btn-primary">
-            {saving ? "Saving..." : "Save Settings"}
+          <button type="submit" disabled={saveAllConfig.isPending} className="btn btn-primary">
+            {saveAllConfig.isPending ? "Saving..." : "Save Settings"}
           </button>
           {saved && <span className="text-[11px] text-[var(--accent)]">Saved</span>}
         </div>

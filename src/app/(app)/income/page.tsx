@@ -1,21 +1,16 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { fmtIdr } from "@/lib/currency";
 import { DEFAULT_USD_IDR_RATE, DEFAULT_EDITOR_RATE, DEFAULT_OPS_COST_RATIO } from "@/lib/const/default";
-
-type ConfigMap = Record<string, string>;
-type Video = { id: string; name: string; earnings: number; status: string };
+import { useVideos } from "@/lib/queries/videos";
+import { useConfig, useSaveAllConfig } from "@/lib/queries/config";
 
 export default function IncomePage() {
-  const [videos, setVideos] = useState<Video[]>([]);
-  const [config, setConfig] = useState<ConfigMap>({});
-  const [form, setForm] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState(false);
+  const { data: videos = [] } = useVideos();
+  const { data: config = {} } = useConfig();
+  const saveAllConfig = useSaveAllConfig();
 
-  useEffect(() => {
-    fetch("/api/videos").then((r) => r.json()).then(setVideos);
-    fetch("/api/config").then((r) => r.json()).then(setConfig);
-  }, []);
+  const [form, setForm] = useState<Record<string, string>>({});
 
   const rate = parseFloat(config["usd_idr_rate"]) || DEFAULT_USD_IDR_RATE;
   const editorRate = parseFloat(config["editor_rate"]) || DEFAULT_EDITOR_RATE;
@@ -32,19 +27,10 @@ export default function IncomePage() {
   const configIncome = parseFloat(config["total_income_idr"] || "0");
   const configExpense = parseFloat(config["total_expense_idr"] || "0");
 
-  async function saveConfig(key: string, value: string) {
-    await fetch("/api/config", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key, value }) });
-  }
-
-  async function handleSave(e: React.FormEvent) {
+  function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
-    for (const [key, value] of Object.entries(form)) {
-      await saveConfig(key, value);
-    }
-    const updated = await fetch("/api/config").then((r) => r.json());
-    setConfig(updated);
-    setSaving(false);
+    const merged = { ...config, ...form };
+    saveAllConfig.mutate(merged);
   }
 
   return (
@@ -90,14 +76,27 @@ export default function IncomePage() {
         <form onSubmit={handleSave} className="grid grid-cols-3 gap-3">
           <div>
             <label className="text-[var(--text-muted)] text-[11px] block mb-1">USD → IDR Rate</label>
-            <input type="number" className="input" value={form.usd_idr_rate || config["usd_idr_rate"] || DEFAULT_USD_IDR_RATE} onChange={(e) => setForm({ ...form, usd_idr_rate: e.target.value })} />
+            <input
+              type="number"
+              className="input"
+              value={form.usd_idr_rate ?? config["usd_idr_rate"] ?? DEFAULT_USD_IDR_RATE}
+              onChange={(e) => setForm({ ...form, usd_idr_rate: e.target.value })}
+            />
           </div>
           <div>
             <label className="text-[var(--text-muted)] text-[11px] block mb-1">Editor Rate (%)</label>
-            <input type="number" step="0.01" className="input" value={form.editor_rate || config["editor_rate"] || DEFAULT_EDITOR_RATE} onChange={(e) => setForm({ ...form, editor_rate: e.target.value })} />
+            <input
+              type="number"
+              step="0.01"
+              className="input"
+              value={form.editor_rate ?? config["editor_rate"] ?? DEFAULT_EDITOR_RATE}
+              onChange={(e) => setForm({ ...form, editor_rate: e.target.value })}
+            />
           </div>
           <div className="flex items-end">
-            <button type="submit" disabled={saving} className="btn btn-primary">{saving ? "Saving..." : "Save Config"}</button>
+            <button type="submit" disabled={saveAllConfig.isPending} className="btn btn-primary">
+              {saveAllConfig.isPending ? "Saving..." : "Save Config"}
+            </button>
           </div>
         </form>
       </div>
@@ -122,7 +121,7 @@ export default function IncomePage() {
                 const n = g - e;
                 return (
                   <tr key={v.id}>
-                    <td className="max-w-xs truncate">{(v as Record<string, unknown>)["title"] as string}</td>
+                    <td className="max-w-xs truncate">{(v as unknown as Record<string, unknown>)["title"] as string}</td>
                     <td className="text-right">${g.toFixed(2)}</td>
                     <td className="text-right">-${e.toFixed(2)}</td>
                     <td className="text-right">${n.toFixed(2)}</td>

@@ -1,19 +1,7 @@
 "use client";
 import { useState } from "react";
 import { CheckCircle, Video, FolderOpen, DollarSign, AlertCircle } from "lucide-react";
-
-type ImportResult = {
-  imported: number;
-  campaignsCreated: number;
-  finance: { totalIncome: number; totalExpense: number };
-  errors?: string[];
-  debug?: {
-    sheetsFound: string[];
-    accountRows: number;
-    videoRows: number;
-    financeRows: number;
-  };
-};
+import { useImport } from "@/lib/queries/import";
 
 function StatCard({
   icon: Icon,
@@ -76,41 +64,33 @@ function ErrorList({ errors }: { errors: string[] }) {
 
 export default function ImportPage() {
   const [file, setFile] = useState<File | null>(null);
-  const [result, setResult] = useState<ImportResult | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{
+    imported: number;
+    campaignsCreated: number;
+    finance: { totalIncome: number; totalExpense: number };
+    errors?: string[];
+    debug?: { sheetsFound: string[]; accountRows: number; videoRows: number; financeRows: number };
+  } | null>(null);
 
-  async function handleUpload(e: React.FormEvent) {
+  const importMutation = useImport();
+
+  function handleUpload(e: React.FormEvent) {
     e.preventDefault();
     if (!file) return;
-    setLoading(true);
     setResult(null);
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const res = await fetch("/api/import", { method: "POST", body: formData });
-      const data = await res.json();
-      if (res.ok) {
-        setResult(data);
-      } else {
-        setResult({
-          imported: 0,
-          campaignsCreated: 0,
-          finance: { totalIncome: 0, totalExpense: 0 },
-          errors: [data.error],
-        });
-      }
-    } catch (err) {
-      setResult({
+    importMutation.mutate(file, {
+      onSuccess: (data) => setResult(data),
+      onError: (err: Error) => setResult({
         imported: 0,
         campaignsCreated: 0,
         finance: { totalIncome: 0, totalExpense: 0 },
-        errors: [`Upload failed: ${err}`],
-      });
-    }
-    setLoading(false);
+        errors: [err.message],
+      }),
+    });
   }
 
   const hasErrors = result && result.errors && result.errors.length > 0;
+  const isLoading = importMutation.isPending;
 
   return (
     <div className="p-6 space-y-6 max-w-2xl">
@@ -135,8 +115,8 @@ export default function ImportPage() {
           />
         </div>
         <div className="flex items-center gap-3">
-          <button disabled={!file || loading} type="submit" className="btn btn-primary">
-            {loading ? "Importing..." : "Run Import"}
+          <button disabled={!file || isLoading} type="submit" className="btn btn-primary">
+            {isLoading ? "Importing..." : "Run Import"}
           </button>
           <a href="/api/import/template" download className="btn btn-ghost text-[var(--text-muted)] text-[11px]">
             Download Template
@@ -144,7 +124,7 @@ export default function ImportPage() {
         </div>
       </form>
 
-      {result && !loading && (
+      {result && !isLoading && (
         <div className="card card-pad space-y-3">
           <div className="flex items-center gap-2">
             <CheckCircle size={16} className="text-[var(--accent)]" />

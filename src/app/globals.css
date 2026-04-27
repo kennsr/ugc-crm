@@ -137,6 +137,11 @@ h3 { font-size: 0.8125rem; font-weight: 500; }
   color: var(--text-muted);
 }
 
+.input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Tables */
 .table {
   width: 100%;

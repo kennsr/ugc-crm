@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server';
 import { DEFAULT_VIDEO_PAY_RATE } from '@/lib/const/default';
 
 export async function GET() {

@@ -1,29 +1,23 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ExternalLink, Film } from "lucide-react";
 import { VIDEO_STATUSES, statusKey, statusLabel, videoBadgeClass } from "@/lib/status";
 import { formatDate } from "@/lib/dates";
 import { DEFAULT_VIDEO_PAY_RATE } from "@/lib/const/default";
+import { useVideos, useCreateVideo, useUpdateVideo, useDeleteVideo, Video } from "@/lib/queries/videos";
+import { useCampaigns } from "@/lib/queries/campaigns";
 
-type Campaign = { id: string; brandName: string; color: string; platform: string; rateAmount: number; status: string };
-type Video = {
-  id: string;
+type EditForm = {
   name: string;
-  fileName?: string | null;
-  extension?: string | null;
-  thumbnailUrl?: string | null;
-  driveWebViewLink?: string | null;
-  campaign?: Campaign;
+  extension: string;
   status: string;
-  uploadedAt?: string | null;
-  views: number;
-  likes: number;
-  earnings: number;
-  campaignId?: string;
-  hookType?: string | null;
-  niche?: string | null;
-  format?: string | null;
-  notes?: string | null;
+  notes: string;
+  views: string;
+  likes: string;
+  earnings: string;
+  hookType: string;
+  niche: string;
+  format: string;
 };
 
 function VideoTableSkeleton() {
@@ -32,7 +26,9 @@ function VideoTableSkeleton() {
       <table className="table">
         <thead>
           <tr>
+            <th></th>
             <th>Name</th>
+            <th>File</th>
             <th>Ext</th>
             <th>Campaign</th>
             <th>Status</th>
@@ -63,49 +59,25 @@ function VideoTableSkeleton() {
   );
 }
 
-type EditForm = {
-  name: string;
-  extension: string;
-  status: string;
-  notes: string;
-  views: string;
-  likes: string;
-  earnings: string;
-  hookType: string;
-  niche: string;
-  format: string;
-};
-
 export default function VideosPage() {
-  const [videos, setVideos] = useState<Video[]>([]);
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const { data: videos = [], isLoading } = useVideos();
+  const { data: campaigns = [] } = useCampaigns();
+  const createVideo = useCreateVideo();
+  const updateVideo = useUpdateVideo();
+  const deleteVideo = useDeleteVideo();
+
   const [showAdd, setShowAdd] = useState(false);
   const [filterCampaign, setFilterCampaign] = useState("");
-  const [loading, setLoading] = useState(true);
-
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({
     name: "", extension: "", status: "backlog", notes: "",
     views: "", likes: "", earnings: "", hookType: "", niche: "", format: "",
   });
 
-  // Add form state
   const [addForm, setAddForm] = useState<Record<string, string>>({
     name: "", fileName: "", extension: "", campaignId: "",
     status: "backlog", notes: "", hookType: "", niche: "", format: "",
   });
-
-  useEffect(() => {
-    setLoading(true);
-    Promise.all([
-      fetch("/api/videos").then((r) => r.json()),
-      fetch("/api/campaigns").then((r) => r.json()),
-    ]).then(([videosData, campaignsData]) => {
-      setVideos(videosData);
-      setCampaigns(campaignsData);
-      setLoading(false);
-    });
-  }, []);
 
   const filtered = filterCampaign ? videos.filter((v) => v.campaignId === filterCampaign) : videos;
 
@@ -126,54 +98,44 @@ export default function VideosPage() {
   }
 
   function saveEdit(id: string) {
-    fetch("/api/videos", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id,
-        name: editForm.name,
-        extension: editForm.extension || null,
-        status: editForm.status,
-        notes: editForm.notes || null,
-        views: Number(editForm.views) || 0,
-        likes: Number(editForm.likes) || 0,
-        earnings: parseFloat(editForm.earnings) || DEFAULT_VIDEO_PAY_RATE,
-        hookType: editForm.hookType || null,
-        niche: editForm.niche || null,
-        format: editForm.format || null,
-      }),
-    }).then((r) => r.json()).then((updated) => {
-      setVideos((prev) => prev.map((v) => v.id === updated.id ? updated : v));
-      setEditingId(null);
-    });
+    updateVideo.mutate({
+      id,
+      name: editForm.name,
+      extension: editForm.extension || null,
+      status: editForm.status,
+      notes: editForm.notes || null,
+      views: Number(editForm.views) || 0,
+      likes: Number(editForm.likes) || 0,
+      earnings: parseFloat(editForm.earnings) || DEFAULT_VIDEO_PAY_RATE,
+      hookType: editForm.hookType || null,
+      niche: editForm.niche || null,
+      format: editForm.format || null,
+    }, { onSuccess: () => setEditingId(null) });
   }
 
   function submitAdd(e: React.FormEvent) {
     e.preventDefault();
-    fetch("/api/videos", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: addForm.name || addForm.fileName || "Untitled",
-        fileName: addForm.fileName || null,
-        extension: addForm.extension || null,
-        campaignId: addForm.campaignId || null,
-        status: addForm.status || "backlog",
-        notes: addForm.notes || null,
-        hookType: addForm.hookType || null,
-        niche: addForm.niche || null,
-        format: addForm.format || null,
-      }),
-    }).then((r) => r.json()).then((v) => {
-      setVideos((prev) => [v, ...prev]);
-      setShowAdd(false);
-      setAddForm({ name: "", fileName: "", extension: "", campaignId: "", status: "backlog", notes: "", hookType: "", niche: "", format: "" });
+    createVideo.mutate({
+      name: addForm.name || addForm.fileName || "Untitled",
+      fileName: addForm.fileName || null,
+      extension: addForm.extension || null,
+      campaignId: addForm.campaignId || null,
+      status: addForm.status || "backlog",
+      notes: addForm.notes || null,
+      hookType: addForm.hookType || null,
+      niche: addForm.niche || null,
+      format: addForm.format || null,
+    }, {
+      onSuccess: () => {
+        setShowAdd(false);
+        setAddForm({ name: "", fileName: "", extension: "", campaignId: "", status: "backlog", notes: "", hookType: "", niche: "", format: "" });
+      }
     });
   }
 
   function del(id: string) {
     if (!confirm("Delete this video?")) return;
-    fetch(`/api/videos?id=${id}`, { method: "DELETE" }).then(() => setVideos((prev) => prev.filter((v) => v.id !== id)));
+    deleteVideo.mutate(id);
   }
 
   return (
@@ -208,14 +170,16 @@ export default function VideosPage() {
             <input placeholder="Format" className="input" value={addForm.format} onChange={(e) => setAddForm({ ...addForm, format: e.target.value })} />
             <input placeholder="Notes" className="input col-span-3" value={addForm.notes} onChange={(e) => setAddForm({ ...addForm, notes: e.target.value })} />
             <div className="col-span-3 flex gap-2">
-              <button type="submit" className="btn btn-primary">Save Video</button>
+              <button type="submit" disabled={createVideo.isPending} className="btn btn-primary">
+                {createVideo.isPending ? "Saving..." : "Save Video"}
+              </button>
               <button type="button" onClick={() => setShowAdd(false)} className="btn btn-secondary">Cancel</button>
             </div>
           </form>
         </div>
       )}
 
-      {loading ? (
+      {isLoading ? (
         <VideoTableSkeleton />
       ) : (
         <div className="card overflow-hidden">
@@ -223,7 +187,7 @@ export default function VideosPage() {
             <thead>
               <tr>
                 <th></th>
-              <th>Name</th>
+                <th>Name</th>
                 <th>File</th>
                 <th>Ext</th>
                 <th>Campaign</th>
@@ -248,13 +212,12 @@ export default function VideosPage() {
                           title={v.fileName ?? undefined}
                         >
                           {v.thumbnailUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={v.thumbnailUrl}
                               alt={v.name}
                               className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
@@ -352,7 +315,7 @@ export default function VideosPage() {
                     <td className="text-right">
                       {editingId === v.id ? (
                         <div className="flex gap-1 justify-end">
-                          <button onClick={() => saveEdit(v.id)} className="btn btn-primary text-[11px] py-1 px-2">Save</button>
+                          <button onClick={() => saveEdit(v.id)} disabled={updateVideo.isPending} className="btn btn-primary text-[11px] py-1 px-2">Save</button>
                           <button onClick={() => setEditingId(null)} className="btn btn-secondary text-[11px] py-1 px-2">Cancel</button>
                         </div>
                       ) : (
@@ -389,9 +352,7 @@ export default function VideosPage() {
                           </div>
                         </div>
                         {v.fileName && (
-                          <p className="text-[10px] text-[var(--text-muted)] mt-2 font-mono">
-                            File: {v.fileName}
-                          </p>
+                          <p className="text-[10px] text-[var(--text-muted)] mt-2 font-mono">File: {v.fileName}</p>
                         )}
                         {editForm.status === "posted" && (
                           <p className="text-[10px] text-[var(--accent)] mt-1">Setting status to Posted will set the uploaded date to today.</p>

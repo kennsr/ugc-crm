@@ -2,8 +2,6 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase';
 import {
   LayoutDashboard,
   Megaphone,
@@ -13,6 +11,7 @@ import {
   Upload,
   Settings,
 } from 'lucide-react';
+import { useProfile } from '@/lib/queries/profile';
 
 const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -26,14 +25,11 @@ const menuItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [user, setUser] = useState<{ email?: string; user_metadata?: { full_name?: string } } | null>(null);
+  const { data: profile } = useProfile();
 
-  useEffect(() => {
-    createClient().auth.getUser().then(({ data }) => setUser(data.user));
-  }, []);
-
-  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const displayName = profile?.fullName || profile?.email?.split('@')[0] || 'User';
   const initials = displayName.slice(0, 2).toUpperCase();
+  const avatarUrl = profile?.avatarUrl;
 
   return (
     <aside className="w-56 bg-[var(--bg-primary)] border-r border-[var(--border)] flex flex-col fixed h-full">
@@ -67,12 +63,17 @@ export default function Sidebar() {
       </nav>
       <div className="p-4 border-t border-[var(--border)]">
         <Link href="/settings" className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-[var(--bg-tertiary)] border border-[var(--border)] flex items-center justify-center">
-            <span className="text-[10px] font-semibold text-[var(--text-primary)]">{initials}</span>
+          <div className="w-8 h-8 rounded-full bg-[var(--bg-tertiary)] border border-[var(--border)] shrink-0 overflow-hidden flex items-center justify-center">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-[10px] font-semibold text-[var(--text-primary)]">{initials}</span>
+            )}
           </div>
           <div className="leading-tight">
             <p className="text-[11px] font-medium text-[var(--text-primary)]">{displayName}</p>
-            <p className="text-[9px] text-[var(--text-muted)]">{user?.email || ''}</p>
+            <p className="text-[9px] text-[var(--text-muted)]">{profile?.email || ''}</p>
           </div>
         </Link>
       </div>

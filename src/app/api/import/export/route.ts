@@ -11,7 +11,11 @@ export async function GET() {
 
   const [campaigns, videos, incomeConfig, expenseConfig] = await Promise.all([
     prisma.campaign.findMany({ where: { workspaceId: auth.workspaceId }, orderBy: { createdAt: 'asc' } }),
-    prisma.video.findMany({ where: { workspaceId: auth.workspaceId }, orderBy: { createdAt: 'asc' } }),
+    prisma.video.findMany({
+      where: { workspaceId: auth.workspaceId },
+      orderBy: { createdAt: 'asc' },
+      include: { campaign: true },
+    }),
     prisma.config.findFirst({ where: { workspaceId: auth.workspaceId, key: 'total_income_idr' } }),
     prisma.config.findFirst({ where: { workspaceId: auth.workspaceId, key: 'total_expense_idr' } }),
   ]);

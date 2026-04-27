@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
 import { DEFAULT_VIDEO_PAY_RATE, DEFAULT_USD_IDR_RATE, DEFAULT_EDITOR_RATE } from '@/lib/const/default';
-import { Video_Status } from '@prisma/client';
 
 function excelDate(serial: number): Date {
   return new Date(1899, 11, 30 + Math.floor(serial));
@@ -129,7 +128,7 @@ export async function POST(req: NextRequest) {
           name,
           fileName: (row['File Name'] as string) || null,
           platform: 'tiktok',
-          status: status as Video_Status,
+          status: status,
           uploadedAt,
           earnings,
           notes: (row['Notes'] as string) || null,

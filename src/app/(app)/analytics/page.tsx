@@ -1,20 +1,13 @@
 "use client";
-import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-
-type Video = { id: string; name: string; campaign?: { brandName: string }; views: number; earnings: number; platform: string; hookType?: string; niche?: string; status: string };
-type Campaign = { id: string; brandName: string; _count?: { videos: number } };
+import { useVideos } from "@/lib/queries/videos";
+import { useCampaigns } from "@/lib/queries/campaigns";
 
 const COLORS = ["#00FF88", "#00BFFF", "#FFD700", "#FF6B6B", "#B388FF", "#FF8A65"];
 
 export default function AnalyticsPage() {
-  const [videos, setVideos] = useState<Video[]>([]);
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-
-  useEffect(() => {
-    fetch("/api/videos").then((r) => r.json()).then(setVideos);
-    fetch("/api/campaigns").then((r) => r.json()).then(setCampaigns);
-  }, []);
+  const { data: videos = [] } = useVideos();
+  const { data: campaigns = [] } = useCampaigns();
 
   const posted = videos.filter((v) => v.status === "posted" && v.earnings > 0);
 

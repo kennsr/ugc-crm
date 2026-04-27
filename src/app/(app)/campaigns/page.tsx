@@ -1,45 +1,60 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CardSkeleton } from "@/components/LoadingSkeleton";
 import { CAMPAIGN_COLORS } from "@/lib/color";
+import { useCampaigns, useCreateCampaign, useUpdateCampaign, useDeleteCampaign } from "@/lib/queries/campaigns";
 
-type Campaign = { id?: string; brandName: string; color: string; platform: string; rateType: string; rateAmount: number; status: string; notes: string; _count?: { videos: number } };
+type Campaign = {
+  id?: string;
+  brandName: string;
+  color: string;
+  platform: string;
+  rateType: string;
+  rateAmount: number;
+  status: string;
+  notes: string;
+  _count?: { videos: number };
+};
+
+const platforms = ["tiktok", "youtube", "both"];
+const statuses = ["active", "paused", "completed", "negotiating"];
+const rateTypes = ["fixed", "fixed_plus_views", "rev_share"];
 
 export default function CampaignsPage() {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState<Record<string, string>>({});
-  const [editId, setEditId] = useState<string | null>(null);
+  const { data: campaigns = [], isLoading } = useCampaigns();
+  const createCampaign = useCreateCampaign();
+  const updateCampaign = useUpdateCampaign();
+  const deleteCampaign = useDeleteCampaign();
 
-  useEffect(() => {
-    fetch("/api/campaigns").then((r) => r.json()).then((data) => {
-      setCampaigns(data);
-      setLoading(false);
-    });
-  }, []);
+  const [showAdd, setShowAdd] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [form, setForm] = useState<Record<string, string>>({});
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    const method = editId ? "PUT" : "POST";
-    const body = editId ? { id: editId, ...form } : form;
-    fetch("/api/campaigns", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-      .then((r) => r.json())
-      .then((c) => {
-        if (editId) {
-          setCampaigns((prev) => prev.map((x) => (x.id === editId ? c : x)));
-          setEditId(null);
-        } else {
-          setCampaigns((prev) => [c, ...prev]);
-        }
-        setShowAdd(false);
-        setForm({});
+    const data = {
+      brandName: form.brandName,
+      color: form.color || "#6366f1",
+      platform: form.platform || "both",
+      rateType: form.rateType || "fixed",
+      rateAmount: parseFloat(form.rateAmount) || 30,
+      status: form.status || "active",
+      notes: form.notes || "",
+    };
+    if (editId) {
+      updateCampaign.mutate({ id: editId, ...data }, {
+        onSuccess: () => { setShowAdd(false); setEditId(null); setForm({}); }
       });
+    } else {
+      createCampaign.mutate(data, {
+        onSuccess: () => { setShowAdd(false); setForm({}); }
+      });
+    }
   }
 
   function del(id: string) {
     if (!confirm("Delete campaign + all its videos?")) return;
-    fetch(`/api/campaigns?id=${id}`, { method: "DELETE" }).then(() => setCampaigns((prev) => prev.filter((c) => c.id !== id)));
+    deleteCampaign.mutate(id);
   }
 
   function startEdit(c: Campaign) {
@@ -56,9 +71,7 @@ export default function CampaignsPage() {
     setShowAdd(true);
   }
 
-  const platforms = ["tiktok", "youtube", "both"];
-  const statuses = ["active", "paused", "completed", "negotiating"];
-  const rateTypes = ["fixed", "fixed_plus_views", "rev_share"];
+  const isPending = createCampaign.isPending || updateCampaign.isPending;
 
   return (
     <div className="p-6 space-y-4">
@@ -126,14 +139,16 @@ export default function CampaignsPage() {
               <input placeholder="Optional notes" className="input w-full" value={form.notes || ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
             </div>
             <div className="col-span-4 flex gap-2">
-              <button type="submit" className="btn btn-primary">Save</button>
+              <button type="submit" disabled={isPending} className="btn btn-primary">
+                {isPending ? "Saving..." : "Save"}
+              </button>
               <button type="button" onClick={() => { setShowAdd(false); setEditId(null); }} className="btn btn-secondary">Cancel</button>
             </div>
           </form>
         </div>
       )}
 
-      {loading ? (
+      {isLoading ? (
         <div className="grid grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => <CardSkeleton key={i} />)}
         </div>
