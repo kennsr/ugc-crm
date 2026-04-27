@@ -53,6 +53,7 @@ model Invite {
 model Campaign {
   id         String   @id @default(cuid())
   brandName  String
+  color      String   @default("#6366f1")
   platform   String   @default("both")
   rateType   String   @default("fixed")
   rateAmount Float    @default(30)
@@ -101,6 +102,8 @@ model Video {
   notes            String?
   driveFileId      String?  // Google Drive file ID
   driveFolderId    String?  // Google Drive folder ID
+  driveWebViewLink String?  // Link to open the file in Drive
+  thumbnailUrl     String?  // Drive thumbnail URL (may expire)
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 

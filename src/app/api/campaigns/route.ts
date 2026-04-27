@@ -19,11 +19,12 @@ export async function POST(req: Request) {
   if (auth instanceof NextResponse) return auth;
 
   const body = await req.json();
-  const { brandName, platform, rateType, rateAmount, status, notes, driveFolderId } = body;
+  const { brandName, color, platform, rateType, rateAmount, status, notes, driveFolderId } = body;
 
   const campaign = await prisma.campaign.create({
     data: {
       brandName,
+      color: color || '#6366f1',
       platform: platform || 'both',
       rateType: rateType || 'fixed',
       rateAmount: parseFloat(rateAmount) || 0,

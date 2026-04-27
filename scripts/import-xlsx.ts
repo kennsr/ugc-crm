@@ -20,89 +20,94 @@ async function main() {
 
   const wb = XLSX.readFile(path);
 
-  // ── Import Campaigns from Account sheet ──
-  const accountSheet = wb.Sheets["Account"];
-  const accountData = XLSX.utils.sheet_to_json(accountSheet) as Record<string, unknown>[];
-  console.log(`📋 Account sheet: ${accountData.length} rows`);
-
-  // Unique campaigns
-  const campaignNames = new Set<string>();
-  (accountData as Record<string, unknown>[]).forEach((row) => {
-    const c = row["Campaign"] as string;
-    if (c) campaignNames.add(c);
-  });
-  console.log("Campaigns found:", [...campaignNames]);
-
-  for (const brandName of campaignNames) {
-    const existing = await prisma.campaign.findFirst({ where: { brandName } });
-    if (!existing) {
-      await prisma.campaign.create({
-        data: { brandName, status: "active", rateAmount: DEFAULT_VIDEO_PAY_RATE, workspaceId: "placeholder" },
-      });
-      console.log(`  ✅ Created campaign: ${brandName}`);
+  // ── Import Campaigns from sheet (matches /account/i) ──
+  const accountSheetName = Object.keys(wb.Sheets).find((name) => /^account$/i.test(name.trim()));
+  const accountSheet = accountSheetName ? wb.Sheets[accountSheetName] : null;
+  const accountData = (accountSheet ? XLSX.utils.sheet_to_json(accountSheet) : []) as Record<string, unknown>[];
+  if (accountSheetName) {
+    console.log(`📋 Account sheet: ${accountData.length} rows`);
+    const campaignNames = new Set<string>();
+    accountData.forEach((row) => {
+      const c = row["Campaign"] as string;
+      if (c) campaignNames.add(c);
+    });
+    console.log("Campaigns found:", [...campaignNames]);
+    for (const brandName of campaignNames) {
+      const existing = await prisma.campaign.findFirst({ where: { brandName } });
+      if (!existing) {
+        await prisma.campaign.create({
+          data: { brandName, status: "active", rateAmount: DEFAULT_VIDEO_PAY_RATE, workspaceId: "placeholder" },
+        });
+        console.log(`  ✅ Created campaign: ${brandName}`);
+      }
     }
   }
 
-  // ── Import Videos from Video sheet ──
-  const videoSheet = wb.Sheets["Video"];
-  const videoData = XLSX.utils.sheet_to_json(videoSheet) as Record<string, unknown>[];
-  console.log(`\n🎬 Video sheet: ${videoData.length} rows`);
+  // ── Import Videos from sheet (matches /videos?/i) ──
+  const videoSheetName = Object.keys(wb.Sheets).find((name) => /^videos?$/i.test(name.trim()));
+  const videoSheet = videoSheetName ? wb.Sheets[videoSheetName] : null;
+  const videoData = (videoSheet ? XLSX.utils.sheet_to_json(videoSheet) : []) as Record<string, unknown>[];
 
   let imported = 0;
-  for (const row of videoData) {
-    const no = row["No"];
-    const title = row["Name"] as string;
-    if (!no || !title) continue;
+  if (!videoSheetName) {
+    console.warn("⚠ No 'Videos' or 'Video' sheet found — skipping video import.");
+  } else {
+    console.log(`\n🎬 Found video sheet: "${videoSheetName}" (${videoData.length} rows)`);
+    for (const row of videoData) {
+      const no = row["No"];
+      const title = row["Name"] as string;
+      if (!no || !title) continue;
 
-    const campaignName = (row["Campaign"] as string) || "";
-    const statusRaw = (row["Status"] as string) || "posted";
+      const campaignName = (row["Campaign"] as string) || "";
+      const statusRaw = (row["Status"] as string) || "posted";
 
-    // Map status
-    let status = "posted";
-    if (statusRaw === "Not Accepted") status = "not_accepted";
-    else if (statusRaw === "Cancelled") status = "cancelled";
-    else if (statusRaw === "In Review") status = "in_review";
-    else if (statusRaw === "Link Required") status = "link_required";
-    else if (statusRaw === "Backlog") status = "backlog";
-    else if (statusRaw === "Shooting") status = "shooting";
-    else if (statusRaw === "Editing") status = "editing";
-    else if (statusRaw === "Revision") status = "revision";
-    else status = "posted";
+      // Map status
+      let status = "posted";
+      if (statusRaw === "Not Accepted") status = "not_accepted";
+      else if (statusRaw === "Cancelled") status = "cancelled";
+      else if (statusRaw === "In Review") status = "in_review";
+      else if (statusRaw === "Link Required") status = "link_required";
+      else if (statusRaw === "Backlog") status = "backlog";
+      else if (statusRaw === "Shooting") status = "shooting";
+      else if (statusRaw === "Editing") status = "editing";
+      else if (statusRaw === "Revision") status = "revision";
+      else status = "posted";
 
-    // Find campaign
-    let campaignId: string | undefined;
-    if (campaignName) {
-      const camp = await prisma.campaign.findFirst({ where: { brandName: campaignName } });
-      campaignId = camp?.id;
+      // Find campaign
+      let campaignId: string | undefined;
+      if (campaignName) {
+        const camp = await prisma.campaign.findFirst({ where: { brandName: campaignName } });
+        campaignId = camp?.id;
+      }
+
+      // Parse date → uploadedAt (auto-set if status is "posted")
+      const dateSerial = row["Uploaded At"];
+      let uploadedAt: Date | undefined;
+      if (dateSerial && typeof dateSerial === "number") {
+        uploadedAt = excelDate(dateSerial);
+      } else if (status === "posted") {
+        uploadedAt = new Date();
+      }
+
+      const earningsVal = parseFloat(String(row["Earnings"])) || DEFAULT_VIDEO_PAY_RATE;
+
+      await prisma.video.create({
+        data: {
+          name: String(title),
+          fileName: (row["File Name"] as string) || null,
+          platform: "tiktok",
+          campaignId,
+          status,
+          uploadedAt: uploadedAt ?? null,
+          earnings: earningsVal,
+          notes: (row["Notes"] as string) || null,
+          workspaceId: "placeholder",
+        },
+      });
+      imported++;
     }
-
-    // Parse date → uploadedAt (auto-set if status is "posted")
-    const dateSerial = row["Uploaded At"];
-    let uploadedAt: Date | undefined;
-    if (dateSerial && typeof dateSerial === "number") {
-      uploadedAt = excelDate(dateSerial);
-    } else if (status === "posted") {
-      uploadedAt = new Date();
-    }
-
-    const earningsVal = parseFloat(String(row["Earnings"])) || DEFAULT_VIDEO_PAY_RATE;
-
-    await prisma.video.create({
-      data: {
-        name: String(title),
-        fileName: (row["File Name"] as string) || null,
-        platform: "tiktok",
-        campaignId,
-        status,
-        uploadedAt: uploadedAt ?? null,
-        earnings: earningsVal,
-        notes: (row["Notes"] as string) || null,
-        workspaceId: "placeholder",
-      },
-    });
-    imported++;
+    console.log(`  ✅ Imported ${imported} videos`);
   }
-  console.log(`  ✅ Imported ${imported} videos`);
 
   // ── Import Finance from Finance sheet ──
   const financeSheet = wb.Sheets["Finance"];

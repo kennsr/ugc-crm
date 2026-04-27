@@ -1,15 +1,18 @@
 "use client";
 import { useEffect, useState } from "react";
+import { ExternalLink, Film } from "lucide-react";
 import { VIDEO_STATUSES, statusKey, statusLabel, videoBadgeClass } from "@/lib/status";
 import { formatDate } from "@/lib/dates";
 import { DEFAULT_VIDEO_PAY_RATE } from "@/lib/const/default";
 
-type Campaign = { id: string; brandName: string; platform: string; rateAmount: number; status: string };
+type Campaign = { id: string; brandName: string; color: string; platform: string; rateAmount: number; status: string };
 type Video = {
   id: string;
   name: string;
   fileName?: string | null;
   extension?: string | null;
+  thumbnailUrl?: string | null;
+  driveWebViewLink?: string | null;
   campaign?: Campaign;
   status: string;
   uploadedAt?: string | null;
@@ -42,7 +45,9 @@ function VideoTableSkeleton() {
         <tbody>
           {Array.from({ length: 5 }).map((_, i) => (
             <tr key={i}>
+              <td><div className="skeleton h-8 w-12 rounded" /></td>
               <td><div className="skeleton h-4 w-40" /></td>
+              <td><div className="skeleton h-4 w-32" /></td>
               <td><div className="skeleton h-4 w-8" /></td>
               <td><div className="skeleton h-4 w-24" /></td>
               <td><div className="skeleton h-5 w-20" /></td>
@@ -180,7 +185,7 @@ export default function VideosPage() {
             <option value="">All Campaigns</option>
             {campaigns.map((c) => <option key={c.id} value={c.id}>{c.brandName}</option>)}
           </select>
-          <button onClick={() => setShowAdd(true)} className="btn btn-primary">+ Add Video</button>
+          <button onClick={() => setShowAdd(true)} className="btn btn-ghost text-[var(--accent)] text-[11px]" style={{ whiteSpace: 'nowrap' }}>+ Add</button>
         </div>
       </div>
 
@@ -217,7 +222,9 @@ export default function VideosPage() {
           <table className="table">
             <thead>
               <tr>
-                <th>Name</th>
+                <th></th>
+              <th>Name</th>
+                <th>File</th>
                 <th>Ext</th>
                 <th>Campaign</th>
                 <th>Status</th>
@@ -231,6 +238,39 @@ export default function VideosPage() {
               {filtered.map((v) => (
                 <>
                   <tr key={v.id} className={editingId === v.id ? "bg-[var(--accent)]/5" : ""}>
+                    <td className="px-2">
+                      {v.driveWebViewLink ? (
+                        <a
+                          href={v.driveWebViewLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block rounded overflow-hidden border border-[var(--border)] hover:border-[var(--accent)] transition-colors w-12 h-8 bg-[var(--bg-tertiary)] relative group"
+                          title={v.fileName ?? undefined}
+                        >
+                          {v.thumbnailUrl ? (
+                            <img
+                              src={v.thumbnailUrl}
+                              alt={v.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Film size={14} className="text-[var(--text-muted)]" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <ExternalLink size={12} className="text-white" />
+                          </div>
+                        </a>
+                      ) : (
+                        <div className="w-12 h-8 rounded border border-[var(--border)] bg-[var(--bg-tertiary)] flex items-center justify-center">
+                          <Film size={14} className="text-[var(--text-muted)]" />
+                        </div>
+                      )}
+                    </td>
                     <td className="max-w-[200px] truncate" title={v.fileName ?? undefined}>
                       {editingId === v.id ? (
                         <input
@@ -240,8 +280,13 @@ export default function VideosPage() {
                           placeholder="Name"
                         />
                       ) : (
-                        <div className="truncate">{v.name || v.fileName || "—"}</div>
+                        <div className="truncate">{v.name || "—"}</div>
                       )}
+                    </td>
+                    <td>
+                      <span className="font-mono text-[var(--text-muted)] text-[10px] truncate block max-w-[160px]" title={v.fileName ?? undefined}>
+                        {v.fileName || "—"}
+                      </span>
                     </td>
                     <td>
                       {editingId === v.id ? (
@@ -255,7 +300,14 @@ export default function VideosPage() {
                         <span className="text-[var(--text-muted)] text-xs uppercase">{v.extension || "—"}</span>
                       )}
                     </td>
-                    <td className="text-[var(--text-secondary)] text-sm">{v.campaign?.brandName || "—"}</td>
+                    <td>
+                      {v.campaign ? (
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: v.campaign.color }} />
+                          <span className="text-[var(--text-secondary)] text-sm truncate">{v.campaign.brandName}</span>
+                        </div>
+                      ) : "—"}
+                    </td>
                     <td>
                       {editingId === v.id ? (
                         <select
@@ -313,7 +365,7 @@ export default function VideosPage() {
                   </tr>
                   {editingId === v.id && (
                     <tr key={`${v.id}-edit`} className="bg-[var(--accent)]/3">
-                      <td colSpan={8} className="px-4 py-3">
+                      <td colSpan={10} className="px-4 py-3">
                         <div className="grid grid-cols-6 gap-3">
                           <div>
                             <label className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide block mb-1">Hook Type</label>
@@ -349,7 +401,7 @@ export default function VideosPage() {
                   )}
                 </>
               ))}
-              {filtered.length === 0 && <tr><td colSpan={8} className="card-pad text-center text-[var(--text-muted)]">No videos found</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={10} className="card-pad text-center text-[var(--text-muted)]">No videos found</td></tr>}
             </tbody>
           </table>
         </div>

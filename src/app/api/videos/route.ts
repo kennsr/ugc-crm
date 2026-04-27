@@ -28,6 +28,7 @@ export async function POST(req: Request) {
     status, views, likes, comments, shares, watchTime, rpm, earnings,
     hookType, niche, format, hasBeforeAfter, hasTextOverlay, durationBucket, postedTimeBucket,
     aiScore, aiTag, notes, driveFileId, driveFolderId,
+    driveWebViewLink, thumbnailUrl,
   } = body;
 
   const isPosted = (status ?? DEFAULT_VIDEO_STATUS) === 'posted';
@@ -47,6 +48,8 @@ export async function POST(req: Request) {
       hasBeforeAfter: Boolean(hasBeforeAfter), hasTextOverlay: Boolean(hasTextOverlay),
       durationBucket, postedTimeBucket, aiScore, aiTag, notes,
       driveFileId, driveFolderId,
+      driveWebViewLink: driveWebViewLink || null,
+      thumbnailUrl: thumbnailUrl || null,
       workspaceId: auth.workspaceId,
       campaignId: campaignId || null,
     },

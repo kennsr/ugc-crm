@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { CardSkeleton } from "@/components/LoadingSkeleton";
+import { CAMPAIGN_COLORS } from "@/lib/color";
 
-type Campaign = { id?: string; brandName: string; platform: string; rateType: string; rateAmount: number; status: string; notes: string; _count?: { videos: number } };
+type Campaign = { id?: string; brandName: string; color: string; platform: string; rateType: string; rateAmount: number; status: string; notes: string; _count?: { videos: number } };
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -21,9 +22,8 @@ export default function CampaignsPage() {
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const method = editId ? "PUT" : "POST";
-    const url = editId ? "/api/campaigns" : "/api/campaigns";
     const body = editId ? { id: editId, ...form } : form;
-    fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+    fetch("/api/campaigns", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
       .then((r) => r.json())
       .then((c) => {
         if (editId) {
@@ -43,7 +43,15 @@ export default function CampaignsPage() {
   }
 
   function startEdit(c: Campaign) {
-    setForm({ brandName: c.brandName, platform: c.platform, rateType: c.rateType, rateAmount: String(c.rateAmount), status: c.status, notes: c.notes || "" });
+    setForm({
+      brandName: c.brandName,
+      color: c.color,
+      platform: c.platform,
+      rateType: c.rateType,
+      rateAmount: String(c.rateAmount),
+      status: c.status,
+      notes: c.notes || "",
+    });
     setEditId(c.id ?? null);
     setShowAdd(true);
   }
@@ -64,20 +72,60 @@ export default function CampaignsPage() {
       {showAdd && (
         <div className="card border-[var(--accent)] card-pad">
           <h3 className="mb-3">{editId ? "Edit Campaign" : "Add Campaign"}</h3>
-          <form onSubmit={submit} className="grid grid-cols-2 gap-3">
-            <input required placeholder="Brand Name" className="input" value={form.brandName || ""} onChange={(e) => setForm({ ...form, brandName: e.target.value })} />
-            <select className="input" value={form.platform || "both"} onChange={(e) => setForm({ ...form, platform: e.target.value })}>
-              {platforms.map((p) => <option key={p} value={p}>{p.toUpperCase()}</option>)}
-            </select>
-            <select className="input" value={form.rateType || "fixed"} onChange={(e) => setForm({ ...form, rateType: e.target.value })}>
-              {rateTypes.map((r) => <option key={r} value={r}>{r.replace("_", " + ")}</option>)}
-            </select>
-            <input type="number" step="0.01" placeholder="Rate (USD)" className="input" value={form.rateAmount || ""} onChange={(e) => setForm({ ...form, rateAmount: e.target.value })} />
-            <select className="input" value={form.status || "active"} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-              {statuses.map((s) => <option key={s} value={s}>{s.toUpperCase()}</option>)}
-            </select>
-            <input placeholder="Notes (optional)" className="input col-span-2" value={form.notes || ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-            <div className="col-span-2 flex gap-2">
+          <form onSubmit={submit} className="grid grid-cols-4 gap-3">
+            <div>
+              <label className="text-[var(--text-muted)] text-[10px] block mb-1 uppercase tracking-wide">Brand Name</label>
+              <input required placeholder="e.g. GlowRecipe" className="input w-full" value={form.brandName || ""} onChange={(e) => setForm({ ...form, brandName: e.target.value })} />
+            </div>
+            <div>
+              <label className="text-[var(--text-muted)] text-[10px] block mb-1 uppercase tracking-wide">Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  className="input w-10 h-9 p-0.5 cursor-pointer border rounded"
+                  value={form.color || "#6366f1"}
+                  onChange={(e) => setForm({ ...form, color: e.target.value })}
+                />
+                <div className="flex gap-1">
+                  {CAMPAIGN_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setForm({ ...form, color: c })}
+                      className={`w-5 h-5 rounded-full border-2 transition-transform ${form.color === c ? "border-[var(--text-primary)] scale-110" : "border-transparent"}`}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div>
+              <label className="text-[var(--text-muted)] text-[10px] block mb-1 uppercase tracking-wide">Platform</label>
+              <select className="input w-full" value={form.platform || "both"} onChange={(e) => setForm({ ...form, platform: e.target.value })}>
+                {platforms.map((p) => <option key={p} value={p}>{p.toUpperCase()}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[var(--text-muted)] text-[10px] block mb-1 uppercase tracking-wide">Rate Type</label>
+              <select className="input w-full" value={form.rateType || "fixed"} onChange={(e) => setForm({ ...form, rateType: e.target.value })}>
+                {rateTypes.map((r) => <option key={r} value={r}>{r.replace("_", " + ")}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[var(--text-muted)] text-[10px] block mb-1 uppercase tracking-wide">Rate (USD)</label>
+              <input type="number" step="0.01" placeholder="30" className="input w-full" value={form.rateAmount || ""} onChange={(e) => setForm({ ...form, rateAmount: e.target.value })} />
+            </div>
+            <div>
+              <label className="text-[var(--text-muted)] text-[10px] block mb-1 uppercase tracking-wide">Status</label>
+              <select className="input w-full" value={form.status || "active"} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+                {statuses.map((s) => <option key={s} value={s}>{s.toUpperCase()}</option>)}
+              </select>
+            </div>
+            <div className="col-span-2">
+              <label className="text-[var(--text-muted)] text-[10px] block mb-1 uppercase tracking-wide">Notes</label>
+              <input placeholder="Optional notes" className="input w-full" value={form.notes || ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+            </div>
+            <div className="col-span-4 flex gap-2">
               <button type="submit" className="btn btn-primary">Save</button>
               <button type="button" onClick={() => { setShowAdd(false); setEditId(null); }} className="btn btn-secondary">Cancel</button>
             </div>
@@ -94,9 +142,12 @@ export default function CampaignsPage() {
           {campaigns.map((c) => (
             <div key={c.id} className="card card-pad hover:border-[var(--border-light)] transition-colors">
               <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-[var(--text-primary)]">{c.brandName}</h3>
-                  <p className="text-[var(--text-muted)] text-[10px] mt-0.5">${c.rateAmount}/{c.rateType.replace("_", "+")} · {c.platform.toUpperCase()}</p>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
+                  <div>
+                    <h3 className="text-[var(--text-primary)]">{c.brandName}</h3>
+                    <p className="text-[var(--text-muted)] text-[10px] mt-0.5">${c.rateAmount}/{c.rateType.replace("_", "+")} · {c.platform.toUpperCase()}</p>
+                  </div>
                 </div>
                 <span className={`badge ${
                   c.status === "active" ? "badge-success" :

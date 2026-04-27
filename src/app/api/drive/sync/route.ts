@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
 import { getDriveClient } from '@/lib/drive';
+import { getCampaignColor } from '@/lib/color';
 import { DEFAULT_VIDEO_STATUS } from '@/lib/const/default';
 
 export async function POST(request: NextRequest) {
@@ -32,6 +33,10 @@ export async function POST(request: NextRequest) {
     let campaignsCreated = 0;
     let videosCreated = 0;
 
+    // Count existing campaigns to assign sequential colors from palette
+    const existingCampaignCount = await prisma.campaign.count({ where: { workspaceId } });
+    let colorIndex = existingCampaignCount;
+
     const rootContents = await drive.files.list({
       q: `'${rootFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
       fields: 'files(id, name)',
@@ -45,10 +50,19 @@ export async function POST(request: NextRequest) {
 
       const campaign = await prisma.campaign.upsert({
         where: { id: folder.id! },
-        create: { id: folder.id!, brandName: folder.name || 'Unnamed Campaign', workspaceId, driveFolderId: folder.id! },
+        create: {
+          id: folder.id!,
+          brandName: folder.name || 'Unnamed Campaign',
+          color: getCampaignColor(colorIndex),
+          workspaceId,
+          driveFolderId: folder.id!,
+        },
         update: { brandName: folder.name || 'Unnamed Campaign', driveFolderId: folder.id! },
       });
-      if (campaign.id === folder.id) campaignsCreated++;
+      if (campaign.id === folder.id) {
+        campaignsCreated++;
+        colorIndex++;
+      }
 
       const exportsFolder = await drive.files.list({
         q: `'${folder.id}' in parents and mimeType='application/vnd.google-apps.folder' and name='exports' and trashed=false`,
@@ -62,7 +76,7 @@ export async function POST(request: NextRequest) {
 
       const videoFiles = await drive.files.list({
         q: `'${videosFolderId}' in parents and not mimeType='application/vnd.google-apps.folder' and trashed=false`,
-        fields: 'files(id, name, createdTime, size)',
+        fields: 'files(id, name, createdTime, size, thumbnailLink, webViewLink)',
         orderBy: 'createdTime desc',
         pageSize: 100,
       });
@@ -87,10 +101,14 @@ export async function POST(request: NextRequest) {
             campaignId: campaign.id,
             driveFileId: file.id!,
             driveFolderId: videosFolderId,
+            driveWebViewLink: (file as { webViewLink?: string }).webViewLink || null,
+            thumbnailUrl: (file as { thumbnailLink?: string }).thumbnailLink || null,
           },
           update: {
             driveFileId: file.id!,
             driveFolderId: videosFolderId,
+            driveWebViewLink: (file as { webViewLink?: string }).webViewLink || null,
+            thumbnailUrl: (file as { thumbnailLink?: string }).thumbnailLink || null,
             campaignId: campaign.id,
           },
         });
