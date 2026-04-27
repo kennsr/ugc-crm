@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
-type Video = { id: string; title: string; campaign?: { brandName: string }; views: number; earnings: number; platform: string; hookType?: string; niche?: string; status: string };
+type Video = { id: string; name: string; campaign?: { brandName: string }; views: number; earnings: number; platform: string; hookType?: string; niche?: string; status: string };
 type Campaign = { id: string; brandName: string; _count?: { videos: number } };
 
 const COLORS = ["#00FF88", "#00BFFF", "#FFD700", "#FF6B6B", "#B388FF", "#FF8A65"];

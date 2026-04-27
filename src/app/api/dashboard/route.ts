@@ -1,18 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { createClient } from '@/lib/supabase-server';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
 
-  const membership = await prisma.workspaceMember.findFirst({
-    where: { userId: user.id },
-  });
-  if (!membership) return NextResponse.json({ error: 'no workspace' }, { status: 404 });
-
-  const workspaceId = membership.workspaceId;
+  const { workspaceId } = auth;
 
   const [campaignCount, videoCount, configRows, earningsData, postedCount, recentVideos] = await Promise.all([
     prisma.campaign.count({ where: { workspaceId } }),

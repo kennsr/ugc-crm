@@ -70,27 +70,28 @@ model Campaign {
 }
 
 model Video {
-  id               String   @id @default(cuid())
-  title            String
-  fileName         String?
+  id               String    @id @default(cuid())
+  name             String    @default("")
+  fileName         String?   // immutable — set by Drive sync
+  extension        String?   // editable
   platformVideoId  String?
-  platform         String   @default("tiktok")
-  postedAt         String?
-  status           String   @default("posted")
+  platform         String    @default("tiktok")
+  status           String    @default("backlog")
+  uploadedAt       DateTime? // set automatically when status changes to "Posted"
 
-  views            Int      @default(0)
-  likes            Int      @default(0)
-  comments         Int      @default(0)
-  shares           Int      @default(0)
+  views            Int       @default(0)
+  likes            Int       @default(0)
+  comments         Int       @default(0)
+  shares           Int       @default(0)
   watchTime        String?
   rpm              Float?
-  earnings         Float    @default(0)
+  earnings         Float     @default(30)
 
   hookType         String?
   niche            String?
   format           String?
-  hasBeforeAfter   Boolean  @default(false)
-  hasTextOverlay   Boolean  @default(false)
+  hasBeforeAfter   Boolean   @default(false)
+  hasTextOverlay   Boolean   @default(false)
   durationBucket   String?
   postedTimeBucket String?
 
@@ -100,8 +101,8 @@ model Video {
   notes            String?
   driveFileId      String?  // Google Drive file ID
   driveFolderId    String?  // Google Drive folder ID
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)

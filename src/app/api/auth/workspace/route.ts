@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase-server';
+import { DEFAULT_USD_IDR_RATE, DEFAULT_EDITOR_RATE } from '@/lib/const/default';
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -23,8 +24,8 @@ export async function POST(req: Request) {
       members: { create: { userId, role: 'admin' } },
       configs: {
         create: [
-          { key: 'usd_idr_rate', value: '17000' },
-          { key: 'editor_rate', value: '0.20' },
+          { key: 'usd_idr_rate', value: String(DEFAULT_USD_IDR_RATE) },
+          { key: 'editor_rate', value: String(DEFAULT_EDITOR_RATE) },
           { key: 'total_income_idr', value: '0' },
           { key: 'total_expense_idr', value: '0' },
         ],

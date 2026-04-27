@@ -1,8 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
+import { fmtIdr } from "@/lib/currency";
+import { DEFAULT_USD_IDR_RATE, DEFAULT_EDITOR_RATE, DEFAULT_OPS_COST_RATIO } from "@/lib/const/default";
 
 type ConfigMap = Record<string, string>;
-type Video = { id: string; title: string; earnings: number; status: string };
+type Video = { id: string; name: string; earnings: number; status: string };
 
 export default function IncomePage() {
   const [videos, setVideos] = useState<Video[]>([]);
@@ -15,8 +17,8 @@ export default function IncomePage() {
     fetch("/api/config").then((r) => r.json()).then(setConfig);
   }, []);
 
-  const rate = parseFloat(config["usd_idr_rate"] || "17000");
-  const editorRate = parseFloat(config["editor_rate"] || "0.20");
+  const rate = parseFloat(config["usd_idr_rate"]) || DEFAULT_USD_IDR_RATE;
+  const editorRate = parseFloat(config["editor_rate"]) || DEFAULT_EDITOR_RATE;
 
   const videosWithEarnings = videos.filter((v) => v.earnings > 0 && v.status === "posted");
 
@@ -24,14 +26,11 @@ export default function IncomePage() {
   const editorCut = grossUsd * editorRate;
   const netUsd = grossUsd - editorCut;
   const grossIdr = grossUsd * rate;
-  const opsCosts = grossIdr * 0.05;
+  const opsCosts = grossIdr * DEFAULT_OPS_COST_RATIO;
   const netIdr = netUsd * rate - opsCosts;
 
   const configIncome = parseFloat(config["total_income_idr"] || "0");
   const configExpense = parseFloat(config["total_expense_idr"] || "0");
-
-  const fmtIdr = (n: number) =>
-    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
   async function saveConfig(key: string, value: string) {
     await fetch("/api/config", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key, value }) });
@@ -91,11 +90,11 @@ export default function IncomePage() {
         <form onSubmit={handleSave} className="grid grid-cols-3 gap-3">
           <div>
             <label className="text-[var(--text-muted)] text-[11px] block mb-1">USD → IDR Rate</label>
-            <input type="number" className="input" value={form.usd_idr_rate || config["usd_idr_rate"] || "17000"} onChange={(e) => setForm({ ...form, usd_idr_rate: e.target.value })} />
+            <input type="number" className="input" value={form.usd_idr_rate || config["usd_idr_rate"] || DEFAULT_USD_IDR_RATE} onChange={(e) => setForm({ ...form, usd_idr_rate: e.target.value })} />
           </div>
           <div>
             <label className="text-[var(--text-muted)] text-[11px] block mb-1">Editor Rate (%)</label>
-            <input type="number" step="0.01" className="input" value={form.editor_rate || config["editor_rate"] || "0.20"} onChange={(e) => setForm({ ...form, editor_rate: e.target.value })} />
+            <input type="number" step="0.01" className="input" value={form.editor_rate || config["editor_rate"] || DEFAULT_EDITOR_RATE} onChange={(e) => setForm({ ...form, editor_rate: e.target.value })} />
           </div>
           <div className="flex items-end">
             <button type="submit" disabled={saving} className="btn btn-primary">{saving ? "Saving..." : "Save Config"}</button>

@@ -1,22 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { createClient } from '@/lib/supabase-server';
-
-async function getWorkspaceId(userId: string): Promise<string | null> {
-  const m = await prisma.workspaceMember.findFirst({ where: { userId } });
-  return m?.workspaceId || null;
-}
+import { requireAuth } from '@/lib/auth';
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-
-  const workspaceId = await getWorkspaceId(user.id);
-  if (!workspaceId) return NextResponse.json([], { status: 200 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
 
   const campaigns = await prisma.campaign.findMany({
-    where: { workspaceId },
+    where: { workspaceId: auth.workspaceId },
     orderBy: { createdAt: 'desc' },
     include: { _count: { select: { videos: true } } },
   });
@@ -24,12 +15,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-
-  const workspaceId = await getWorkspaceId(user.id);
-  if (!workspaceId) return NextResponse.json({ error: 'no workspace' }, { status: 404 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
 
   const body = await req.json();
   const { brandName, platform, rateType, rateAmount, status, notes, driveFolderId } = body;
@@ -43,19 +30,15 @@ export async function POST(req: Request) {
       status: status || 'active',
       notes,
       driveFolderId,
-      workspaceId,
+      workspaceId: auth.workspaceId,
     },
   });
   return NextResponse.json(campaign);
 }
 
 export async function PUT(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-
-  const workspaceId = await getWorkspaceId(user.id);
-  if (!workspaceId) return NextResponse.json({ error: 'no workspace' }, { status: 404 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
 
   const body = await req.json();
   const { id, ...data } = body;
@@ -63,19 +46,15 @@ export async function PUT(req: Request) {
 
   const existing = await prisma.campaign.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: 'not found' }, { status: 404 });
-  if (existing.workspaceId !== workspaceId) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  if (existing.workspaceId !== auth.workspaceId) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
 
   const updated = await prisma.campaign.update({ where: { id }, data });
   return NextResponse.json(updated);
 }
 
 export async function DELETE(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-
-  const workspaceId = await getWorkspaceId(user.id);
-  if (!workspaceId) return NextResponse.json({ error: 'no workspace' }, { status: 404 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
@@ -83,7 +62,7 @@ export async function DELETE(req: Request) {
 
   const existing = await prisma.campaign.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: 'not found' }, { status: 404 });
-  if (existing.workspaceId !== workspaceId) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  if (existing.workspaceId !== auth.workspaceId) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
 
   await prisma.campaign.delete({ where: { id } });
   return NextResponse.json({ ok: true });

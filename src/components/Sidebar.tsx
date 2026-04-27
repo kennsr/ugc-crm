@@ -2,8 +2,8 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { createBrowserClient } from '@supabase/ssr';
 import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase';
 import {
   LayoutDashboard,
   Megaphone,
@@ -29,11 +29,7 @@ export default function Sidebar() {
   const [user, setUser] = useState<{ email?: string; user_metadata?: { full_name?: string } } | null>(null);
 
   useEffect(() => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    createClient().auth.getUser().then(({ data }) => setUser(data.user));
   }, []);
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';

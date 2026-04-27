@@ -7,27 +7,39 @@ export function CardSkeleton({ className = '' }: { className?: string }) {
   );
 }
 
-export function TableSkeleton({ rows = 5 }: { rows?: number }) {
+export type TableSkeletonCol = {
+  label: string;
+  skeleton: string;
+  align?: 'left' | 'right';
+};
+
+export function TableSkeleton({ rows = 5, columns }: { rows?: number; columns?: TableSkeletonCol[] }) {
+  const cols: TableSkeletonCol[] = columns ?? [
+    { label: 'Name', skeleton: 'w-40' },
+    { label: 'Campaign', skeleton: 'w-28' },
+    { label: 'Status', skeleton: 'w-20' },
+    { label: 'Views', skeleton: 'w-16', align: 'right' },
+    { label: 'Earnings', skeleton: 'w-16', align: 'right' },
+  ];
+
   return (
     <div className="card overflow-hidden">
       <table className="table">
         <thead>
           <tr>
-            <th>Title</th>
-            <th>Campaign</th>
-            <th>Status</th>
-            <th className="text-right">Views</th>
-            <th className="text-right">Earnings</th>
+            {cols.map((c) => (
+              <th key={c.label} className={c.align === 'right' ? 'text-right' : ''}>{c.label}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
           {Array.from({ length: rows }).map((_, i) => (
             <tr key={i}>
-              <td><div className="skeleton h-4 w-32" /></td>
-              <td><div className="skeleton h-4 w-24" /></td>
-              <td><div className="skeleton h-5 w-16" /></td>
-              <td><div className="skeleton h-4 w-16 ml-auto" /></td>
-              <td><div className="skeleton h-4 w-12 ml-auto" /></td>
+              {cols.map((c) => (
+                <td key={c.label} className={c.align === 'right' ? 'text-right' : ''}>
+                  <div className={`skeleton h-4 ${c.skeleton} ${c.align === 'right' ? 'ml-auto' : ''}`} />
+                </td>
+              ))}
             </tr>
           ))}
         </tbody>

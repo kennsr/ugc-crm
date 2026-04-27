@@ -1,24 +1,20 @@
 'use client';
-import { createBrowserClient } from '@supabase/ssr';
 import { useEffect, useState } from "react";
 import dynamic from 'next/dynamic';
+import { createClient } from '@/lib/supabase';
+import { DEFAULT_USD_IDR_RATE, DEFAULT_EDITOR_RATE } from '@/lib/const/default';
 
 type ConfigMap = Record<string, string>;
 
 const DriveConnect = dynamic(() => import('@/components/DriveConnect'), { ssr: false });
 
-interface Props {
-  supabaseUrl: string;
-  supabaseAnonKey: string;
-}
-
-export default function SettingsClient({ supabaseUrl, supabaseAnonKey }: Props) {
+export default function SettingsClient() {
   const [config, setConfig] = useState<ConfigMap>({});
   const [form, setForm] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
+  const supabase = createClient();
 
   useEffect(() => {
     fetch("/api/config").then((r) => r.json()).then((c) => {
@@ -58,11 +54,11 @@ export default function SettingsClient({ supabaseUrl, supabaseAnonKey }: Props) 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-[var(--text-muted)] text-[11px] block mb-1">USD → IDR Exchange Rate</label>
-              <input type="number" className="input" value={form["usd_idr_rate"] || "17000"} onChange={(e) => setForm({ ...form, "usd_idr_rate": e.target.value })} />
+              <input type="number" className="input" value={form["usd_idr_rate"] || DEFAULT_USD_IDR_RATE} onChange={(e) => setForm({ ...form, "usd_idr_rate": e.target.value })} />
             </div>
             <div>
               <label className="text-[var(--text-muted)] text-[11px] block mb-1">Editor Rate (%)</label>
-              <input type="number" step="0.01" className="input" value={form["editor_rate"] || "0.20"} onChange={(e) => setForm({ ...form, "editor_rate": e.target.value })} />
+              <input type="number" step="0.01" className="input" value={form["editor_rate"] || DEFAULT_EDITOR_RATE} onChange={(e) => setForm({ ...form, "editor_rate": e.target.value })} />
             </div>
           </div>
         </div>

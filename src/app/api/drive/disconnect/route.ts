@@ -1,28 +1,15 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase-server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth';
 
 export async function DELETE() {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-    }
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
 
-    // Get user's workspace
-    const membership = await prisma.workspaceMember.findFirst({
-      where: { userId: user.id },
-    });
-
-    if (!membership) {
-      return NextResponse.json({ error: 'no workspace' }, { status: 404 });
-    }
-
-    // Remove Drive tokens from Config for this workspace
     await prisma.config.deleteMany({
       where: {
-        workspaceId: membership.workspaceId,
+        workspaceId: auth.workspaceId,
         key: {
           in: [
             'google_drive_access_token',
@@ -36,6 +23,7 @@ export async function DELETE() {
 
     return NextResponse.json({ success: true });
   } catch (err) {
+    console.error('Drive disconnect error:', err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }

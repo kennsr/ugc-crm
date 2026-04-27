@@ -2,16 +2,10 @@
 import { format } from 'date-fns';
 import { useDashboard } from '@/hooks/useApi';
 import { CardSkeleton, TableSkeleton } from '@/components/LoadingSkeleton';
+import { fmtIdr } from '@/lib/currency';
 
 export default function DashboardPage() {
   const { data, isLoading, error } = useDashboard();
-
-  const fmtIdr = (n: number) =>
-    new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(n);
 
   const cards = [
     { label: 'Campaigns', value: data?.campaigns as number },

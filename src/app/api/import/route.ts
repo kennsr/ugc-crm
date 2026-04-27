@@ -1,39 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth';
+import { DEFAULT_VIDEO_PAY_RATE, DEFAULT_VIDEO_STATUS } from '@/lib/const/default';
 
 export async function POST(req: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, { cookies: { getAll() { return req.cookies.getAll(); }, setAll() {} } });
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-
-  const membership = await prisma.workspaceMember.findFirst({ where: { userId: user.id } });
-  if (!membership) return NextResponse.json({ error: 'no workspace' }, { status: 404 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
 
   const body = await req.json();
   const { videos = [], config = {} } = body;
   let imported = 0;
+  const errors: string[] = [];
 
   for (const v of videos) {
     try {
+      const isPosted = (v.status ?? DEFAULT_VIDEO_STATUS) === 'posted';
       await prisma.video.create({
         data: {
-          title: v.title || 'Untitled',
-          fileName: v.fileName || '',
+          name: v.name || v.title || 'Untitled',
+          fileName: v.fileName || null,
+          extension: v.extension || null,
           platform: v.platform || 'tiktok',
-          campaignId: v.campaignId || null,
-          postedAt: v.postedAt || null,
-          status: v.status || 'posted',
+          status: v.status || DEFAULT_VIDEO_STATUS,
+          uploadedAt: isPosted ? new Date() : null,
           views: parseInt(v.views) || 0,
           likes: parseInt(v.likes) || 0,
           comments: parseInt(v.comments) || 0,
           shares: parseInt(v.shares) || 0,
           watchTime: v.watchTime || null,
           rpm: parseFloat(v.rpm) || null,
-          earnings: parseFloat(v.earnings) || 0,
+          earnings: parseFloat(v.earnings) || DEFAULT_VIDEO_PAY_RATE,
           hookType: v.hookType || null,
           niche: v.niche || null,
           format: v.format || null,
@@ -44,20 +40,23 @@ export async function POST(req: NextRequest) {
           aiScore: v.aiScore || null,
           aiTag: v.aiTag || null,
           notes: v.notes || null,
-          workspaceId: membership.workspaceId,
+          workspaceId: auth.workspaceId,
+          campaignId: v.campaignId || null,
         },
       });
       imported++;
-    } catch (_e) {}
+    } catch (e) {
+      errors.push(`Failed to import video: ${String(e)}`);
+    }
   }
 
   for (const [key, value] of Object.entries(config)) {
     await prisma.config.upsert({
-      where: { workspaceId_key: { workspaceId: membership.workspaceId, key } },
+      where: { workspaceId_key: { workspaceId: auth.workspaceId, key } },
       update: { value: String(value) },
-      create: { workspaceId: membership.workspaceId, key, value: String(value) },
+      create: { workspaceId: auth.workspaceId, key, value: String(value) },
     });
   }
 
-  return NextResponse.json({ imported, total: videos.length });
+  return NextResponse.json({ imported, total: videos.length, errors: errors.length > 0 ? errors : undefined });
 }

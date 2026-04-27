@@ -1,11 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 import * as XLSX from "xlsx";
+import { DEFAULT_VIDEO_PAY_RATE, DEFAULT_USD_IDR_RATE, DEFAULT_EDITOR_RATE } from "../src/lib/const/default";
 
 const prisma = new PrismaClient();
 
-function excelDate(serial: number): string {
+function excelDate(serial: number): Date {
   const d = new Date(1899, 11, 30 + Math.floor(serial));
-  return d.toISOString().split("T")[0];
+  return d;
 }
 
 async function main() {
@@ -36,7 +37,7 @@ async function main() {
     const existing = await prisma.campaign.findFirst({ where: { brandName } });
     if (!existing) {
       await prisma.campaign.create({
-        data: { brandName, status: "active", rateAmount: 30, workspaceId: "placeholder" },
+        data: { brandName, status: "active", rateAmount: DEFAULT_VIDEO_PAY_RATE, workspaceId: "placeholder" },
       });
       console.log(`  ✅ Created campaign: ${brandName}`);
     }
@@ -61,7 +62,11 @@ async function main() {
     if (statusRaw === "Not Accepted") status = "not_accepted";
     else if (statusRaw === "Cancelled") status = "cancelled";
     else if (statusRaw === "In Review") status = "in_review";
-    else if (statusRaw === "Link Required") status = "in_review";
+    else if (statusRaw === "Link Required") status = "link_required";
+    else if (statusRaw === "Backlog") status = "backlog";
+    else if (statusRaw === "Shooting") status = "shooting";
+    else if (statusRaw === "Editing") status = "editing";
+    else if (statusRaw === "Revision") status = "revision";
     else status = "posted";
 
     // Find campaign
@@ -71,22 +76,28 @@ async function main() {
       campaignId = camp?.id;
     }
 
-    // Parse date
+    // Parse date → uploadedAt (auto-set if status is "posted")
     const dateSerial = row["Uploaded At"];
-    let postedAt: string | undefined;
+    let uploadedAt: Date | undefined;
     if (dateSerial && typeof dateSerial === "number") {
-      postedAt = excelDate(dateSerial);
+      uploadedAt = excelDate(dateSerial);
+    } else if (status === "posted") {
+      uploadedAt = new Date();
     }
+
+    const earningsVal = parseFloat(String(row["Earnings"])) || DEFAULT_VIDEO_PAY_RATE;
 
     await prisma.video.create({
       data: {
-        title: String(title),
-        fileName: row["File Name"] as string | undefined,
+        name: String(title),
+        fileName: (row["File Name"] as string) || null,
         platform: "tiktok",
         campaignId,
         status,
-        postedAt,
-        notes: row["Notes"] as string | undefined,
+        uploadedAt: uploadedAt ?? null,
+        earnings: earningsVal,
+        notes: (row["Notes"] as string) || null,
+        workspaceId: "placeholder",
       },
     });
     imported++;
@@ -114,8 +125,8 @@ async function main() {
 
   await prisma.config.upsert({ where: { key: "total_income_idr" }, update: { value: String(totalIncome) }, create: { key: "total_income_idr", value: String(totalIncome) } });
   await prisma.config.upsert({ where: { key: "total_expense_idr" }, update: { value: String(totalExpense) }, create: { key: "total_expense_idr", value: String(totalExpense) } });
-  await prisma.config.upsert({ where: { key: "usd_idr_rate" }, update: { value: "17000" }, create: { key: "usd_idr_rate", value: "17000" } });
-  await prisma.config.upsert({ where: { key: "editor_rate" }, update: { value: "0.20" }, create: { key: "editor_rate", value: "0.20" } });
+  await prisma.config.upsert({ where: { key: "usd_idr_rate" }, update: { value: String(DEFAULT_USD_IDR_RATE) }, create: { key: "usd_idr_rate", value: String(DEFAULT_USD_IDR_RATE) } });
+  await prisma.config.upsert({ where: { key: "editor_rate" }, update: { value: String(DEFAULT_EDITOR_RATE) }, create: { key: "editor_rate", value: String(DEFAULT_EDITOR_RATE) } });
 
   console.log(`  ✅ Total Income: ${totalIncome.toLocaleString("id-ID")} IDR`);
   console.log(`  ✅ Total Expense: ${totalExpense.toLocaleString("id-ID")} IDR`);

@@ -1,16 +1,21 @@
 "use client";
 import { useEffect, useState } from "react";
+import { CardSkeleton } from "@/components/LoadingSkeleton";
 
 type Campaign = { id?: string; brandName: string; platform: string; rateType: string; rateAmount: number; status: string; notes: string; _count?: { videos: number } };
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
   const [editId, setEditId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/campaigns").then((r) => r.json()).then(setCampaigns);
+    fetch("/api/campaigns").then((r) => r.json()).then((data) => {
+      setCampaigns(data);
+      setLoading(false);
+    });
   }, []);
 
   function submit(e: React.FormEvent) {
@@ -80,32 +85,38 @@ export default function CampaignsPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-4">
-        {campaigns.map((c) => (
-          <div key={c.id} className="card card-pad hover:border-[var(--border-light)] transition-colors">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-[var(--text-primary)]">{c.brandName}</h3>
-                <p className="text-[var(--text-muted)] text-[10px] mt-0.5">${c.rateAmount}/{c.rateType.replace("_", "+")} · {c.platform.toUpperCase()}</p>
+      {loading ? (
+        <div className="grid grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => <CardSkeleton key={i} />)}
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 gap-4">
+          {campaigns.map((c) => (
+            <div key={c.id} className="card card-pad hover:border-[var(--border-light)] transition-colors">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-[var(--text-primary)]">{c.brandName}</h3>
+                  <p className="text-[var(--text-muted)] text-[10px] mt-0.5">${c.rateAmount}/{c.rateType.replace("_", "+")} · {c.platform.toUpperCase()}</p>
+                </div>
+                <span className={`badge ${
+                  c.status === "active" ? "badge-success" :
+                  c.status === "negotiating" ? "badge-warning" :
+                  c.status === "paused" ? "badge-neutral" :
+                  "badge-danger"
+                }`}>{c.status.toUpperCase()}</span>
               </div>
-              <span className={`badge ${
-                c.status === "active" ? "badge-success" :
-                c.status === "negotiating" ? "badge-warning" :
-                c.status === "paused" ? "badge-neutral" :
-                "badge-danger"
-              }`}>{c.status.toUpperCase()}</span>
-            </div>
-            <div className="mt-3 flex items-center justify-between">
-              <p className="text-[var(--text-muted)] text-[11px]">{c._count?.videos || 0} videos</p>
-              <div className="flex gap-3">
-                <button onClick={() => startEdit(c)} className="btn btn-ghost text-[11px]">Edit</button>
-                <button onClick={() => del(c.id!)} className="btn btn-ghost text-[11px] text-[var(--danger)]">Del</button>
+              <div className="mt-3 flex items-center justify-between">
+                <p className="text-[var(--text-muted)] text-[11px]">{c._count?.videos || 0} videos</p>
+                <div className="flex gap-3">
+                  <button onClick={() => startEdit(c)} className="btn btn-ghost text-[11px]">Edit</button>
+                  <button onClick={() => del(c.id!)} className="btn btn-ghost text-[11px] text-[var(--danger)]">Del</button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-        {campaigns.length === 0 && <div className="col-span-3 text-center text-[var(--text-muted)] py-8">No campaigns yet</div>}
-      </div>
+          ))}
+          {campaigns.length === 0 && <div className="col-span-3 text-center text-[var(--text-muted)] py-8">No campaigns yet</div>}
+        </div>
+      )}
     </div>
   );
 }
