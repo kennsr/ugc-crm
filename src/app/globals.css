@@ -33,9 +33,9 @@ body {
 }
 
 /* Typography */
-h1 { font-size: 1.375rem; font-weight: 600; letter-spacing: -0.015em; }
-h2 { font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; }
-h3 { font-size: 0.8125rem; font-weight: 500; }
+h1 { font-size: 1.375rem; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+h2 { font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+h3 { font-size: 0.8125rem; font-weight: 500; margin: 0; }
 
 /* Cards */
 .card {

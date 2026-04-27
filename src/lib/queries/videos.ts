@@ -45,6 +45,7 @@ export function useCreateVideo() {
       qc.setQueryData<Video[]>(['videos'], (old) =>
         old ? [video, ...old] : [video]
       );
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
@@ -62,6 +63,7 @@ export function useUpdateVideo() {
       qc.setQueryData<Video[]>(['videos'], (old) =>
         old?.map((v) => (v.id === updated.id ? updated : v))
       );
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
@@ -75,6 +77,7 @@ export function useDeleteVideo() {
       qc.setQueryData<Video[]>(['videos'], (old) =>
         old?.filter((v) => v.id !== id)
       );
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }

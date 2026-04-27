@@ -1,10 +1,33 @@
 "use client";
-import { useState } from "react";
+import { Fragment, useState } from "react";
+
+function SortTh({ label, sortKey, currentKey, sortDir, onSort, align }: {
+  label: string;
+  sortKey: string;
+  currentKey: string;
+  sortDir: 'asc' | 'desc';
+  onSort: (key: string) => void;
+  align?: 'right';
+}) {
+  const active = currentKey === sortKey;
+  return (
+    <th
+      className={`text-[10px] uppercase tracking-wide text-[var(--text-muted)] cursor-pointer select-none hover:text-[var(--text-primary)] ${align === 'right' ? 'text-right' : ''}`}
+      onClick={() => onSort(sortKey)}
+    >
+      <span className={`inline-flex items-center gap-1 ${align === 'right' ? 'justify-end' : ''}`}>
+        {label}
+        {active && <span className="text-[var(--accent)]">{sortDir === 'asc' ? '↑' : '↓'}</span>}
+      </span>
+    </th>
+  );
+}
 import { ExternalLink, Film } from "lucide-react";
 import { VIDEO_STATUSES, statusKey, statusLabel, videoBadgeClass } from "@/lib/status";
 import { formatDate } from "@/lib/dates";
 import { DEFAULT_VIDEO_PAY_RATE } from "@/lib/const/default";
 import { useVideos, useCreateVideo, useUpdateVideo, useDeleteVideo, Video } from "@/lib/queries/videos";
+import { useDriveStatus } from "@/lib/queries/drive";
 import { useCampaigns } from "@/lib/queries/campaigns";
 
 type EditForm = {
@@ -62,6 +85,7 @@ function VideoTableSkeleton() {
 export default function VideosPage() {
   const { data: videos = [], isLoading } = useVideos();
   const { data: campaigns = [] } = useCampaigns();
+  const { data: driveStatus } = useDriveStatus();
   const createVideo = useCreateVideo();
   const updateVideo = useUpdateVideo();
   const deleteVideo = useDeleteVideo();
@@ -79,7 +103,39 @@ export default function VideosPage() {
     status: "backlog", notes: "", hookType: "", niche: "", format: "",
   });
 
-  const filtered = filterCampaign ? videos.filter((v) => v.campaignId === filterCampaign) : videos;
+  const [sortKey, setSortKey] = useState<string>('createdAt');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  function toggleSort(key: string) {
+    if (sortKey === key) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('desc');
+    }
+  }
+
+  function sortedVideos() {
+    let list = filterCampaign ? videos.filter((v) => v.campaignId === filterCampaign) : [...videos];
+    list.sort((a, b) => {
+      let aVal: string | number | null = null;
+      let bVal: string | number | null = null;
+      if (sortKey === 'name') { aVal = a.name; bVal = b.name; }
+      else if (sortKey === 'campaign') { aVal = a.campaign?.brandName ?? ''; bVal = b.campaign?.brandName ?? ''; }
+      else if (sortKey === 'status') { aVal = a.status; bVal = b.status; }
+      else if (sortKey === 'uploadedAt') { aVal = a.uploadedAt ?? ''; bVal = b.uploadedAt ?? ''; }
+      else if (sortKey === 'views') { aVal = a.views; bVal = b.views; }
+      else if (sortKey === 'earnings') { aVal = a.earnings; bVal = b.earnings; }
+      else if (sortKey === 'createdAt') { aVal = (a as Record<string, unknown>).createdAt as string ?? ''; bVal = (b as Record<string, unknown>).createdAt as string ?? ''; }
+      else { aVal = (a as Record<string, unknown>).createdAt as string ?? ''; bVal = (b as Record<string, unknown>).createdAt as string ?? ''; }
+      if (aVal === bVal) return 0;
+      const cmp = aVal < bVal ? -1 : 1;
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+    return list;
+  }
+
+  const displayed = sortedVideos();
 
   function openEdit(v: Video) {
     setEditingId(v.id);
@@ -143,6 +199,17 @@ export default function VideosPage() {
       <div className="flex items-center justify-between">
         <h1>Videos</h1>
         <div className="flex gap-3 items-center">
+          {driveStatus?.rootFolderId && (
+            <a
+              href={`https://drive.google.com/drive/folders/${driveStatus.rootFolderId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-ghost text-[var(--text-muted)] text-[11px]"
+              style={{ whiteSpace: 'nowrap' }}
+            >
+              Open Drive
+            </a>
+          )}
           <select className="input w-40" value={filterCampaign} onChange={(e) => setFilterCampaign(e.target.value)}>
             <option value="">All Campaigns</option>
             {campaigns.map((c) => <option key={c.id} value={c.id}>{c.brandName}</option>)}
@@ -186,22 +253,23 @@ export default function VideosPage() {
           <table className="table">
             <thead>
               <tr>
-                <th></th>
-                <th>Name</th>
+                <th className="w-12"></th>
+                <SortTh label="Name" sortKey="name" currentKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
                 <th>File</th>
                 <th>Ext</th>
-                <th>Campaign</th>
-                <th>Status</th>
-                <th>Uploaded</th>
-                <th className="text-right">Views</th>
-                <th className="text-right">Earnings</th>
+                <SortTh label="Campaign" sortKey="campaign" currentKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <SortTh label="Status" sortKey="status" currentKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <SortTh label="Uploaded" sortKey="uploadedAt" currentKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <SortTh label="Created" sortKey="createdAt" currentKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <SortTh label="Views" sortKey="views" currentKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right" />
+                <SortTh label="Earnings" sortKey="earnings" currentKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right" />
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((v) => (
-                <>
-                  <tr key={v.id} className={editingId === v.id ? "bg-[var(--accent)]/5" : ""}>
+              {displayed.map((v) => (
+                <Fragment key={v.id}>
+                  <tr className={editingId === v.id ? "bg-[var(--accent)]/5" : ""}>
                     <td className="px-2">
                       {v.driveWebViewLink ? (
                         <a
@@ -287,6 +355,7 @@ export default function VideosPage() {
                       )}
                     </td>
                     <td className="text-[var(--text-muted)] text-xs">{formatDate(v.uploadedAt)}</td>
+                    <td className="text-[var(--text-muted)] text-xs">{formatDate((v as Record<string, unknown>).createdAt as string)}</td>
                     <td>
                       {editingId === v.id ? (
                         <input
@@ -327,8 +396,8 @@ export default function VideosPage() {
                     </td>
                   </tr>
                   {editingId === v.id && (
-                    <tr key={`${v.id}-edit`} className="bg-[var(--accent)]/3">
-                      <td colSpan={10} className="px-4 py-3">
+                    <tr className="bg-[var(--accent)]/3">
+                      <td colSpan={11} className="px-4 py-3">
                         <div className="grid grid-cols-6 gap-3">
                           <div>
                             <label className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide block mb-1">Hook Type</label>
@@ -360,9 +429,9 @@ export default function VideosPage() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
-              {filtered.length === 0 && <tr><td colSpan={10} className="card-pad text-center text-[var(--text-muted)]">No videos found</td></tr>}
+              {displayed.length === 0 && <tr><td colSpan={11} className="card-pad text-center text-[var(--text-muted)]">No videos found</td></tr>}
             </tbody>
           </table>
         </div>

@@ -103,6 +103,7 @@ export async function POST(request: NextRequest) {
             driveFolderId: videosFolderId,
             driveWebViewLink: (file as { webViewLink?: string }).webViewLink || null,
             thumbnailUrl: (file as { thumbnailLink?: string }).thumbnailLink || null,
+            createdAt: new Date((file as { createdTime?: string }).createdTime || Date.now()),
           },
           update: {
             driveFileId: file.id!,

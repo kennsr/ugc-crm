@@ -72,7 +72,10 @@ export default function DashboardPage() {
       </div>
 
       <div>
-        <h2 className="mb-3">Recent Videos</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2>Recent Videos</h2>
+          <a href="/videos" target="_blank" className="btn btn-ghost text-[var(--text-muted)] text-[11px]">View all</a>
+        </div>
         {isLoading ? (
           <TableSkeleton rows={5} />
         ) : (data?.recentVideos as Array<Record<string, unknown>>)?.length === 0 ? (
@@ -95,7 +98,7 @@ export default function DashboardPage() {
                 {(data?.recentVideos as Array<Record<string, unknown>>)?.map((v) => (
                   <tr key={v.id as string}>
                     <td className="max-w-xs truncate">
-                      {(v.title as string) || '—'}
+                      {(v.name as string) || '—'}
                     </td>
                     <td className="text-[var(--text-secondary)]">
                       {((v.campaign as Record<string, unknown>)?.brandName as string) || '—'}

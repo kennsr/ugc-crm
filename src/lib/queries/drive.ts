@@ -56,6 +56,7 @@ export function useSyncDrive() {
       qc.invalidateQueries({ queryKey: ['drive'] });
       qc.invalidateQueries({ queryKey: ['videos'] });
       qc.invalidateQueries({ queryKey: ['campaigns'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
