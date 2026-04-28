@@ -25,6 +25,7 @@ model Workspace {
   weeklyLogs      WeeklyLog[]
   configs         Config[]
   invites         Invite[]
+  accounts        Account[]
 }
 
 model WorkspaceMember {
@@ -50,6 +51,22 @@ model Invite {
   createdAt   DateTime  @default(now())
 }
 
+model Account {
+  id         String   @id @default(cuid())
+  name       String
+  username   String?
+  platform   String   @default("tiktok") // tiktok | instagram | youtube
+  email      String?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  workspaceId String
+  workspace  Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  campaignId  String?
+  campaign    Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+}
+
 model Campaign {
   id         String   @id @default(cuid())
   brandName  String
@@ -68,6 +85,7 @@ model Campaign {
   workspace  Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   videos     Video[]
   weeklyLogs WeeklyLog[]
+  accounts   Account[]
 }
 
 model Video {

@@ -10,6 +10,7 @@ import {
   DollarSign,
   Upload,
   Settings,
+  User,
 } from 'lucide-react';
 import { useProfile } from '@/lib/queries/profile';
 
@@ -17,6 +18,7 @@ const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/campaigns", label: "Campaigns", icon: Megaphone },
   { href: "/videos", label: "Videos", icon: Video },
+  { href: "/accounts", label: "Accounts", icon: User },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/income", label: "Income", icon: DollarSign },
   { href: "/import", label: "Import/Export", icon: Upload },

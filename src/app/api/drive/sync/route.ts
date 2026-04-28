@@ -99,8 +99,8 @@ export async function POST(request: NextRequest) {
         const extension = extMatch ? extMatch[1].toLowerCase() : null;
         const baseName = extMatch ? rawName.slice(0, rawName.length - extMatch[0].length) : rawName;
 
-        // Try to find existing video by driveFileId first, then by filename within this campaign
-        let existingVideo = await prisma.video.findFirst({
+        type VideoMatch = { id: string; fileName?: string | null; name?: string | null; driveFileId?: string | null };
+        let existingVideo: VideoMatch | null = await prisma.video.findFirst({
           where: { driveFileId: file.id!, workspaceId },
         });
         if (!existingVideo) {
@@ -119,12 +119,12 @@ export async function POST(request: NextRequest) {
           // Extract version suffix for the "insforge custom N.X → custom-brief N.X" pattern
           const versionMatch = rawName.match(/custom\s+(\d+\.\d+)/i);
           const candidates = await prisma.video.findMany({
-            where: { campaignId: campaign.id, workspaceId, fileName: { not: null } },
+            where: { campaignId: campaign.id, workspaceId },
             select: { id: true, fileName: true, name: true, driveFileId: true },
             orderBy: { createdAt: 'asc' },
           });
 
-          for (const c of candidates) {
+          for (const c of candidates as VideoMatch[]) {
             if (c.driveFileId && c.driveFileId !== file.id!) continue;
             const storedBase = (c.fileName ?? c.name ?? '')
               .replace(/\.(mp4|mov|avi|mkv|webm|jpg|jpeg|png|gif)$/i, '')

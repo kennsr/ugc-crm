@@ -7,16 +7,24 @@ export async function GET() {
 
   const accountData = [
     {
-      Campaign: 'Brand A',
+      No: 1,
+      Name: 'Creator Name',
+      Username: '@creatorhandle',
       Platform: 'tiktok',
-      'Pay Rate': DEFAULT_VIDEO_PAY_RATE,
-      Status: 'active',
+      Campaign: 'Brand A',
+      Email: 'creator@email.com',
+      'Created At': '',
+      Notes: '',
     },
     {
+      No: 2,
+      Name: 'Another Creator',
+      Username: '@anothercreator',
+      Platform: 'instagram',
       Campaign: 'Brand B',
-      Platform: 'tiktok',
-      'Pay Rate': DEFAULT_VIDEO_PAY_RATE,
-      Status: 'active',
+      Email: 'another@email.com',
+      'Created At': '',
+      Notes: '',
     },
   ];
 

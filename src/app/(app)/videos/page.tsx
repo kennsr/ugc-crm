@@ -95,8 +95,8 @@ export default function VideosPage() {
   const [filterCampaign, setFilterCampaign] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({
-    name: "", extension: "", status: "backlog", notes: "",
-    views: "", likes: "", earnings: "", hookType: "", niche: "", format: "",
+    name: '', extension: '', campaignId: '', status: 'backlog', notes: '',
+    views: '', likes: '', earnings: '', hookType: '', niche: '', format: '',
   });
 
   const [addForm, setAddForm] = useState<Record<string, string>>({

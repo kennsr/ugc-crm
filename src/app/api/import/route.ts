@@ -91,6 +91,42 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // ── Account sheet → accounts ──
+  let accountsCreated = 0;
+  for (const row of accountData) {
+    const name = row['Name'] as string;
+    const username = row['Username'] as string;
+    if (!name) continue;
+
+    // Skip if account with same username already exists under this workspace
+    if (username) {
+      const existing = await prisma.account.findFirst({
+        where: { username, workspaceId: auth.workspaceId },
+      });
+      if (existing) continue;
+    }
+
+    let campaignId: string | null = null;
+    const campaignName = row['Campaign'] as string;
+    if (campaignName) {
+      const camp = await prisma.campaign.findFirst({ where: { brandName: campaignName, workspaceId: auth.workspaceId } });
+      campaignId = camp?.id ?? null;
+    }
+
+    await prisma.account.create({
+      data: {
+        name,
+        username: username || null,
+        platform: (row['Platform'] as string) || 'tiktok',
+        email: (row['Email'] as string) || null,
+        notes: (row['Notes'] as string) || null,
+        workspaceId: auth.workspaceId,
+        campaignId,
+      },
+    });
+    accountsCreated++;
+  }
+
   // ── Videos sheet → videos ──
   const videoSheet = findSheet(/^videos?$/i);
   const videoData = videoSheet ? sheetData(videoSheet) : [];
@@ -177,6 +213,7 @@ export async function POST(req: NextRequest) {
     imported,
     total: videoData.length,
     campaignsCreated,
+    accountsCreated,
     finance: { totalIncome, totalExpense },
     errors: errors.length > 0 ? errors : undefined,
     debug: {

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { CheckCircle, Video, FolderOpen, DollarSign, AlertCircle } from "lucide-react";
+import { CheckCircle, Video, FolderOpen, User, DollarSign, AlertCircle } from "lucide-react";
 import { useImport } from "@/lib/queries/import";
 
 function StatCard({
@@ -67,6 +67,7 @@ export default function ImportPage() {
   const [result, setResult] = useState<{
     imported: number;
     campaignsCreated: number;
+    accountsCreated: number;
     finance: { totalIncome: number; totalExpense: number };
     errors?: string[];
     debug?: { sheetsFound: string[]; accountRows: number; videoRows: number; financeRows: number };
@@ -83,6 +84,7 @@ export default function ImportPage() {
       onError: (err: Error) => setResult({
         imported: 0,
         campaignsCreated: 0,
+        accountsCreated: 0,
         finance: { totalIncome: 0, totalExpense: 0 },
         errors: [err.message],
       }),
@@ -131,19 +133,24 @@ export default function ImportPage() {
             <h3>Import Complete</h3>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <StatCard
               icon={Video}
               label="Videos Imported"
               value={result.imported}
-              sub={result.debug ? `${result.debug.videoRows} rows read from sheet` : undefined}
+              sub={result.debug ? `${result.debug.videoRows} rows read` : undefined}
               accent
+            />
+            <StatCard
+              icon={User}
+              label="Accounts Created"
+              value={result.accountsCreated}
+              sub={result.debug ? `${result.debug.accountRows} account rows` : undefined}
             />
             <StatCard
               icon={FolderOpen}
               label="Campaigns Created"
               value={result.campaignsCreated}
-              sub={result.debug ? `${result.debug.accountRows} account rows` : undefined}
             />
             <StatCard
               icon={DollarSign}
@@ -169,8 +176,9 @@ export default function ImportPage() {
       <div className="card card-pad">
         <h3 className="mb-2">What gets imported</h3>
         <ul className="text-[11px] text-[var(--text-muted)] space-y-1">
+          <li><strong>Accounts</strong> — Name, Username, Platform, Campaign, Email, Notes (from <em>Account</em> sheet)</li>
+          <li><strong>Campaigns</strong> — auto-created from Account sheet Campaign column</li>
           <li><strong>Videos</strong> — Name, File Name, Campaign, Status, Uploaded At, Earnings, Notes (from <em>Videos</em> sheet)</li>
-          <li><strong>Campaigns</strong> — auto-created from Account sheet</li>
           <li><strong>Finance totals</strong> — income and expense from Finance sheet</li>
           <li>Performance data — views, likes, etc. must be added manually per video</li>
           <li>AI tags — generated after 5+ videos have performance data</li>

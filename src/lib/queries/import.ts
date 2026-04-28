@@ -3,8 +3,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 export type ImportResult = {
   imported: number;
   campaignsCreated: number;
+  accountsCreated: number;
   finance: { totalIncome: number; totalExpense: number };
   errors?: string[];
+  debug?: { sheetsFound: string[]; accountRows: number; videoRows: number; financeRows: number };
 };
 
 export function useImport() {
@@ -21,6 +23,7 @@ export function useImport() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['videos'] });
       qc.invalidateQueries({ queryKey: ['campaigns'] });
+      qc.invalidateQueries({ queryKey: ['accounts'] });
       qc.invalidateQueries({ queryKey: ['config'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
