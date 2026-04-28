@@ -75,7 +75,7 @@ export async function PUT(req: Request) {
     updateData.uploadedAt = new Date();
   }
 
-  const updated = await prisma.video.update({ where: { id }, data: updateData });
+  const updated = await prisma.video.update({ where: { id }, data: updateData, include: { campaign: true } });
   return NextResponse.json(updated);
 }
 

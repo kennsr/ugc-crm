@@ -108,7 +108,7 @@ export default function DriveConnect() {
             Files are uploaded manually - this app only reads your Drive.
           </p>
           <button
-            onClick={() => connectDrive.mutate()}
+            onClick={() => connectDrive.mutate(undefined, { onSuccess: (data) => { if (data?.authUrl) window.location.href = data.authUrl; } })}
             disabled={connectDrive.isPending}
             className="btn btn-primary"
           >

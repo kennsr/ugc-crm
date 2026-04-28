@@ -43,7 +43,7 @@ export function useCreateVideo() {
       }).then((r) => r.json()),
     onSuccess: (video: Video) => {
       qc.setQueryData<Video[]>(['videos'], (old) =>
-        old ? [video, ...old] : [video]
+        old ? [{ ...video }, ...old] : [video]
       );
       qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
@@ -61,7 +61,7 @@ export function useUpdateVideo() {
       }).then((r) => r.json()),
     onSuccess: (updated: Video) => {
       qc.setQueryData<Video[]>(['videos'], (old) =>
-        old?.map((v) => (v.id === updated.id ? updated : v))
+        old?.map((v) => (v.id === updated.id ? { ...v, ...updated } : v))
       );
       qc.invalidateQueries({ queryKey: ['dashboard'] });
     },

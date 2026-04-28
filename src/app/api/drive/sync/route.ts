@@ -48,20 +48,31 @@ export async function POST(request: NextRequest) {
     for (const folder of rootFolders) {
       if (folder.name?.toLowerCase() === 'exports') continue;
 
-      const campaign = await prisma.campaign.upsert({
-        where: { id: folder.id! },
-        create: {
-          id: folder.id!,
-          brandName: folder.name || 'Unnamed Campaign',
-          color: getCampaignColor(colorIndex),
-          workspaceId,
-          driveFolderId: folder.id!,
-        },
-        update: { brandName: folder.name || 'Unnamed Campaign', driveFolderId: folder.id! },
+      const brandName = folder.name || 'Unnamed Campaign';
+
+      // Prefer matching by brandName to avoid duplicates if campaign already exists
+      let campaign = await prisma.campaign.findFirst({
+        where: { brandName, workspaceId },
       });
-      if (campaign.id === folder.id) {
+
+      if (!campaign) {
+        campaign = await prisma.campaign.create({
+          data: {
+            id: folder.id!,
+            brandName,
+            color: getCampaignColor(colorIndex),
+            workspaceId,
+            driveFolderId: folder.id!,
+          },
+        });
         campaignsCreated++;
         colorIndex++;
+      } else {
+        // Update driveFolderId if it changed
+        await prisma.campaign.update({
+          where: { id: campaign.id },
+          data: { driveFolderId: folder.id! },
+        });
       }
 
       const exportsFolder = await drive.files.list({
@@ -88,32 +99,79 @@ export async function POST(request: NextRequest) {
         const extension = extMatch ? extMatch[1].toLowerCase() : null;
         const baseName = extMatch ? rawName.slice(0, rawName.length - extMatch[0].length) : rawName;
 
-        await prisma.video.upsert({
-          where: { id: file.id! },
-          create: {
-            id: file.id!,
-            name: baseName,
-            fileName: rawName,
-            extension,
-            platform: 'tiktok',
-            status: DEFAULT_VIDEO_STATUS,
-            workspaceId,
-            campaignId: campaign.id,
-            driveFileId: file.id!,
-            driveFolderId: videosFolderId,
-            driveWebViewLink: (file as { webViewLink?: string }).webViewLink || null,
-            thumbnailUrl: (file as { thumbnailLink?: string }).thumbnailLink || null,
-            createdAt: new Date((file as { createdTime?: string }).createdTime || Date.now()),
-          },
-          update: {
-            driveFileId: file.id!,
-            driveFolderId: videosFolderId,
-            driveWebViewLink: (file as { webViewLink?: string }).webViewLink || null,
-            thumbnailUrl: (file as { thumbnailLink?: string }).thumbnailLink || null,
-            campaignId: campaign.id,
-          },
+        // Try to find existing video by driveFileId first, then by filename within this campaign
+        let existingVideo = await prisma.video.findFirst({
+          where: { driveFileId: file.id!, workspaceId },
         });
-        videosCreated++;
+        if (!existingVideo) {
+          existingVideo = await prisma.video.findFirst({
+            where: { campaignId: campaign.id, fileName: rawName, workspaceId },
+          });
+        }
+        // Fallback: strip brand prefix and normalize variations to match against imported entries.
+        // "insforge custom 3.1" → norm "3.1" matches imported "custom-brief 3.1" (version-extracted match)
+        // "insforge custom-brief 3.10" → exact base name match
+        if (!existingVideo) {
+          const extStripped = extMatch ? rawName.slice(0, rawName.length - extMatch[0].length) : rawName;
+          // Try exact base match first (works for insforge custom-brief N.X → custom-brief N.X)
+          const rawBase = extStripped.replace(/^insforge\s+/i, '').toLowerCase().trim();
+
+          // Extract version suffix for the "insforge custom N.X → custom-brief N.X" pattern
+          const versionMatch = rawName.match(/custom\s+(\d+\.\d+)/i);
+          const candidates = await prisma.video.findMany({
+            where: { campaignId: campaign.id, workspaceId, fileName: { not: null } },
+            select: { id: true, fileName: true, name: true, driveFileId: true },
+            orderBy: { createdAt: 'asc' },
+          });
+
+          for (const c of candidates) {
+            if (c.driveFileId && c.driveFileId !== file.id!) continue;
+            const storedBase = (c.fileName ?? c.name ?? '')
+              .replace(/\.(mp4|mov|avi|mkv|webm|jpg|jpeg|png|gif)$/i, '')
+              .toLowerCase()
+              .trim();
+
+            // Exact match
+            if (rawBase === storedBase) { existingVideo = c; break; }
+
+            // Version-extracted match: "insforge custom 3.1" matches "custom-brief 3.1"
+            if (versionMatch) {
+              const storedVersion = (c.fileName ?? c.name ?? '').match(/custom-brief\s+(\d+\.\d+)/i);
+              if (storedVersion && versionMatch[1] === storedVersion[1]) { existingVideo = c; break; }
+            }
+          }
+        }
+
+        if (existingVideo) {
+          // Update drive metadata — preserve user-edited fields
+          await prisma.video.update({
+            where: { id: existingVideo.id },
+            data: {
+              driveFileId: file.id!,
+              driveFolderId: videosFolderId,
+              driveWebViewLink: (file as { webViewLink?: string }).webViewLink || null,
+              thumbnailUrl: (file as { thumbnailLink?: string }).thumbnailLink || null,
+              name: baseName, // sync the name from Drive
+            },
+          });
+        } else {
+          await prisma.video.create({
+            data: {
+              name: baseName,
+              fileName: rawName,
+              extension,
+              platform: 'tiktok',
+              status: DEFAULT_VIDEO_STATUS,
+              workspaceId,
+              campaignId: campaign.id,
+              driveFileId: file.id!,
+              driveFolderId: videosFolderId,
+              driveWebViewLink: (file as { webViewLink?: string }).webViewLink || null,
+              thumbnailUrl: (file as { thumbnailLink?: string }).thumbnailLink || null,
+            },
+          });
+          videosCreated++;
+        }
       }
     }
 

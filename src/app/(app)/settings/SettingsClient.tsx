@@ -25,9 +25,14 @@ export default function SettingsClient() {
 
   const supabase = createClient();
 
+  // Initialize form when config first loads (not on every config change)
+  const [formInitialized, setFormInitialized] = useState(false);
   useEffect(() => {
-    setForm(config);
-  }, [config]);
+    if (!formInitialized && Object.keys(config).length > 0) {
+      setForm(config);
+      setFormInitialized(true);
+    }
+  }, [config, formInitialized]);
 
   useEffect(() => {
     if (profile) {

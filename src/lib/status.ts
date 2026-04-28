@@ -23,14 +23,14 @@ export function statusLabel(key: string): string {
 export function videoBadgeClass(status: string): string {
   switch (status) {
     case 'posted': return 'badge-success';
-    case 'in_review':
-    case 'revision':
     case 'link_required': return 'badge-warning';
-    case 'not_accepted':
-    case 'cancelled': return 'badge-danger';
-    case 'backlog':
+    case 'revision': return 'badge-danger';
+    case 'not_accepted': return 'badge-gray';
     case 'shooting':
-    case 'editing': return 'badge-neutral';
+    case 'editing': return 'badge-orange';
+    case 'in_review': return 'badge-warning';
+    case 'cancelled': return 'badge-neutral';
+    case 'backlog': return 'badge-neutral';
     default: return 'badge-neutral';
   }
 }

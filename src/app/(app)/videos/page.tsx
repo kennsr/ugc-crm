@@ -33,6 +33,7 @@ import { useCampaigns } from "@/lib/queries/campaigns";
 type EditForm = {
   name: string;
   extension: string;
+  campaignId: string;
   status: string;
   notes: string;
   views: string;
@@ -142,6 +143,7 @@ export default function VideosPage() {
     setEditForm({
       name: v.name ?? "",
       extension: v.extension ?? "",
+      campaignId: v.campaignId ?? "",
       status: v.status ?? "backlog",
       notes: v.notes ?? "",
       views: String(v.views ?? ""),
@@ -158,6 +160,7 @@ export default function VideosPage() {
       id,
       name: editForm.name,
       extension: editForm.extension || null,
+      campaignId: editForm.campaignId || null,
       status: editForm.status,
       notes: editForm.notes || null,
       views: Number(editForm.views) || 0,
@@ -309,6 +312,7 @@ export default function VideosPage() {
                           value={editForm.name}
                           onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                           placeholder="Name"
+                          disabled={updateVideo.isPending}
                         />
                       ) : (
                         <div className="truncate">{v.name || "—"}</div>
@@ -326,6 +330,7 @@ export default function VideosPage() {
                           value={editForm.extension}
                           onChange={(e) => setEditForm({ ...editForm, extension: e.target.value })}
                           placeholder="ext"
+                          disabled={updateVideo.isPending}
                         />
                       ) : (
                         <span className="text-[var(--text-muted)] text-xs uppercase">{v.extension || "—"}</span>
@@ -345,6 +350,7 @@ export default function VideosPage() {
                           className="input w-full text-sm py-1"
                           value={editForm.status}
                           onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                          disabled={updateVideo.isPending}
                         >
                           {VIDEO_STATUSES.map((s) => (
                             <option key={s} value={statusKey(s)}>{s}</option>
@@ -363,6 +369,7 @@ export default function VideosPage() {
                           className="input w-20 text-sm py-1 text-right"
                           value={editForm.views}
                           onChange={(e) => setEditForm({ ...editForm, views: e.target.value })}
+                          disabled={updateVideo.isPending}
                         />
                       ) : (
                         <span className="text-right text-[var(--text-secondary)] text-sm">{v.views.toLocaleString()}</span>
@@ -376,6 +383,7 @@ export default function VideosPage() {
                           className="input w-24 text-sm py-1 text-right"
                           value={editForm.earnings}
                           onChange={(e) => setEditForm({ ...editForm, earnings: e.target.value })}
+                          disabled={updateVideo.isPending}
                         />
                       ) : (
                         <span className="text-right text-sm">${v.earnings.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
@@ -384,13 +392,13 @@ export default function VideosPage() {
                     <td className="text-right">
                       {editingId === v.id ? (
                         <div className="flex gap-1 justify-end">
-                          <button onClick={() => saveEdit(v.id)} disabled={updateVideo.isPending} className="btn btn-primary text-[11px] py-1 px-2">Save</button>
-                          <button onClick={() => setEditingId(null)} className="btn btn-secondary text-[11px] py-1 px-2">Cancel</button>
+                          <button onClick={() => saveEdit(v.id)} disabled={updateVideo.isPending} className="btn btn-primary text-[11px] py-1 px-2 min-w-[44px]">{updateVideo.isPending ? '...' : 'Save'}</button>
+                          <button onClick={() => setEditingId(null)} disabled={updateVideo.isPending} className="btn btn-secondary text-[11px] py-1 px-2">Cancel</button>
                         </div>
                       ) : (
                         <div className="flex gap-1 justify-end">
                           <button onClick={() => openEdit(v)} className="btn btn-ghost text-[var(--accent)] text-[11px]">Edit</button>
-                          <button onClick={() => del(v.id)} className="btn btn-ghost text-[var(--danger)] text-[11px]">Del</button>
+                          <button onClick={() => del(v.id)} disabled={deleteVideo.isPending} className="btn btn-ghost text-[var(--danger)] text-[11px]">Del</button>
                         </div>
                       )}
                     </td>
@@ -401,23 +409,26 @@ export default function VideosPage() {
                         <div className="grid grid-cols-6 gap-3">
                           <div>
                             <label className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide block mb-1">Hook Type</label>
-                            <input className="input text-sm py-1" value={editForm.hookType} onChange={(e) => setEditForm({ ...editForm, hookType: e.target.value })} placeholder="Hook Type" />
+                            <input className="input text-sm py-1" value={editForm.hookType} onChange={(e) => setEditForm({ ...editForm, hookType: e.target.value })} placeholder="Hook Type" disabled={updateVideo.isPending} />
                           </div>
                           <div>
                             <label className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide block mb-1">Niche</label>
-                            <input className="input text-sm py-1" value={editForm.niche} onChange={(e) => setEditForm({ ...editForm, niche: e.target.value })} placeholder="Niche" />
+                            <input className="input text-sm py-1" value={editForm.niche} onChange={(e) => setEditForm({ ...editForm, niche: e.target.value })} placeholder="Niche" disabled={updateVideo.isPending} />
                           </div>
                           <div>
                             <label className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide block mb-1">Format</label>
-                            <input className="input text-sm py-1" value={editForm.format} onChange={(e) => setEditForm({ ...editForm, format: e.target.value })} placeholder="Format" />
+                            <input className="input text-sm py-1" value={editForm.format} onChange={(e) => setEditForm({ ...editForm, format: e.target.value })} placeholder="Format" disabled={updateVideo.isPending} />
                           </div>
                           <div>
                             <label className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide block mb-1">Likes</label>
-                            <input type="number" className="input text-sm py-1" value={editForm.likes} onChange={(e) => setEditForm({ ...editForm, likes: e.target.value })} />
+                            <input type="number" className="input text-sm py-1" value={editForm.likes} onChange={(e) => setEditForm({ ...editForm, likes: e.target.value })} disabled={updateVideo.isPending} />
                           </div>
-                          <div className="col-span-2">
-                            <label className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide block mb-1">Notes</label>
-                            <input className="input text-sm py-1" value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} placeholder="Notes" />
+                          <div>
+                            <label className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide block mb-1">Campaign</label>
+                            <select className="input text-sm py-1" value={editForm.campaignId} onChange={(e) => setEditForm({ ...editForm, campaignId: e.target.value })} disabled={updateVideo.isPending}>
+                              <option value="">No Campaign</option>
+                              {campaigns.map((c) => <option key={c.id} value={c.id}>{c.brandName}</option>)}
+                            </select>
                           </div>
                         </div>
                         {v.fileName && (

@@ -50,7 +50,7 @@ export function useSyncDrive() {
       fetch('/api/drive/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folderId }),
+        body: JSON.stringify({ rootFolderId: folderId }),
       }).then((r) => r.json()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['drive'] });
