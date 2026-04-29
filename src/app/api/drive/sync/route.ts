@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
         const extension = extMatch ? extMatch[1].toLowerCase() : null;
         const baseName = extMatch ? rawName.slice(0, rawName.length - extMatch[0].length) : rawName;
 
+        type VideoMatch = { id: string; fileName?: string | null; name?: string | null; driveFileId?: string | null };
         // If a video already has this exact driveFileId, skip it entirely
         const alreadyLinked = await prisma.video.findFirst({
           where: { driveFileId: file.id!, workspaceId },
