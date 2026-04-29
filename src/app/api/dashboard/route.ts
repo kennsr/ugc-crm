@@ -11,7 +11,7 @@ export async function GET() {
   const [campaignCount, videoCount, earningsData, postedCount, recentVideos] = await Promise.all([
     prisma.campaign.count({ where: { workspaceId } }),
     prisma.video.count({ where: { workspaceId } }),
-    prisma.video.aggregate({ where: { workspaceId }, _sum: { earnings: true } }),
+    prisma.video.aggregate({ where: { workspaceId, status: 'posted' }, _sum: { earnings: true } }),
     prisma.video.count({ where: { workspaceId, status: 'posted' } }),
     prisma.video.findMany({
       where: { workspaceId },
