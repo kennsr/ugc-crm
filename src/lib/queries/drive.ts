@@ -5,6 +5,7 @@ export type DriveStatus = {
   email?: string;
   rootFolderId?: string;
   lastSynced?: string;
+  lastBackupAt?: string;
 };
 
 export function useDriveStatus() {

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     let colorIndex = existingCampaignCount;
 
     const rootContents = await drive.files.list({
-      q: `'${rootFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      q: `'${rootFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false and not name starts with '_'`,
       fields: 'files(id, name)',
       orderBy: 'name',
     });

@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useDriveStatus, useDriveFiles, useConnectDrive, useDisconnectDrive, useSyncDrive } from '@/lib/queries/drive';
+import { useBackupDrive } from '@/lib/queries/backup';
 
 type DriveItem = { id: string; name: string };
 
@@ -9,6 +10,7 @@ export default function DriveConnect() {
   const connectDrive = useConnectDrive();
   const disconnectDrive = useDisconnectDrive();
   const syncDrive = useSyncDrive();
+  const backupDrive = useBackupDrive();
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [currentFolder, setCurrentFolder] = useState<DriveItem | null>(null);
@@ -120,6 +122,7 @@ export default function DriveConnect() {
           <div className="text-[11px] text-[var(--text-muted)] space-y-1">
             <p>Root folder: {status.rootFolderId || 'Not set'}</p>
             <p>Last synced: {lastSyncedDate}</p>
+            {status.lastBackupAt && <p>Last backup: {new Date(status.lastBackupAt).toLocaleString()}</p>}
           </div>
 
           <div className="flex gap-2 flex-wrap">
@@ -130,6 +133,21 @@ export default function DriveConnect() {
               className="btn btn-primary"
             >
               {syncDrive.isPending ? 'Syncing...' : 'Sync Now'}
+            </button>
+            <button
+              onClick={() => backupDrive.mutate(undefined, {
+                onSuccess: (data) => {
+                  if (data.success) {
+                    alert(`Backup saved: ${data.webViewLink ? 'View at drive.google.com' : data.fileId}`);
+                  } else {
+                    alert('Backup failed: ' + data.error);
+                  }
+                },
+              })}
+              disabled={backupDrive.isPending}
+              className="btn btn-secondary"
+            >
+              {backupDrive.isPending ? 'Backing up...' : 'Backup to Drive'}
             </button>
             <button
               onClick={() => {

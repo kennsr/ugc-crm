@@ -24,8 +24,8 @@ export default function IncomePage() {
   const opsCosts = grossIdr * DEFAULT_OPS_COST_RATIO;
   const netIdr = netUsd * rate - opsCosts;
 
-  const configIncome = parseFloat(config["total_income_idr"] || "0");
-  const configExpense = parseFloat(config["total_expense_idr"] || "0");
+  const configIncome = 0;
+  const configExpense = 0;
 
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -53,21 +53,6 @@ export default function IncomePage() {
         <div className="stat-card">
           <p className="label">Net (IDR)</p>
           <p className="value">{fmtIdr(netIdr)}</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        <div className="stat-card">
-          <p className="label">Imported Income (IDR)</p>
-          <p className="value">{fmtIdr(configIncome)}</p>
-        </div>
-        <div className="stat-card">
-          <p className="label">Imported Expense (IDR)</p>
-          <p className="value">{fmtIdr(configExpense)}</p>
-        </div>
-        <div className="stat-card">
-          <p className="label">Imported Net Profit</p>
-          <p className="value">{fmtIdr(configIncome - configExpense)}</p>
         </div>
       </div>
 

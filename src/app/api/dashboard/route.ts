@@ -8,10 +8,9 @@ export async function GET() {
 
   const { workspaceId } = auth;
 
-  const [campaignCount, videoCount, configRows, earningsData, postedCount, recentVideos] = await Promise.all([
+  const [campaignCount, videoCount, earningsData, postedCount, recentVideos] = await Promise.all([
     prisma.campaign.count({ where: { workspaceId } }),
     prisma.video.count({ where: { workspaceId } }),
-    prisma.config.findMany({ where: { workspaceId } }),
     prisma.video.aggregate({ where: { workspaceId }, _sum: { earnings: true } }),
     prisma.video.count({ where: { workspaceId, status: 'posted' } }),
     prisma.video.findMany({
@@ -22,10 +21,6 @@ export async function GET() {
     }),
   ]);
 
-  const config: Record<string, string> = {};
-  configRows.forEach((c) => { config[c.key] = c.value; });
-  const totalIncome = parseFloat(config['total_income_idr'] || '0');
-  const totalExpense = parseFloat(config['total_expense_idr'] || '0');
   const totalEarnings = earningsData._sum.earnings || 0;
 
   return NextResponse.json({
@@ -34,9 +29,6 @@ export async function GET() {
     videosPosted: postedCount,
     totalVideos: videoCount,
     totalEarningsUsd: totalEarnings,
-    totalIncomeIdr: totalIncome,
-    totalExpenseIdr: totalExpense,
-    netProfitIdr: totalIncome - totalExpense,
     recentVideos,
   });
 }

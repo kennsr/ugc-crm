@@ -10,7 +10,7 @@ export async function GET() {
     const configs = await prisma.config.findMany({
       where: {
         workspaceId: auth.workspaceId,
-        key: { in: ['google_drive_access_token', 'google_drive_root_folder_id', 'google_drive_last_synced'] },
+        key: { in: ['google_drive_access_token', 'google_drive_root_folder_id', 'google_drive_last_synced', 'last_backup_at'] },
       },
     });
     const configMap: Record<string, string> = {};
@@ -20,6 +20,7 @@ export async function GET() {
       connected: !!configMap['google_drive_access_token'],
       rootFolderId: configMap['google_drive_root_folder_id'] || null,
       lastSynced: configMap['google_drive_last_synced'] || null,
+      lastBackupAt: configMap['last_backup_at'] || null,
     });
   } catch (err) {
     console.error('Drive status error:', err);
