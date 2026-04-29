@@ -99,25 +99,20 @@ export async function POST(request: NextRequest) {
         const extension = extMatch ? extMatch[1].toLowerCase() : null;
         const baseName = extMatch ? rawName.slice(0, rawName.length - extMatch[0].length) : rawName;
 
-        type VideoMatch = { id: string; fileName?: string | null; name?: string | null; driveFileId?: string | null };
-        let existingVideo: VideoMatch | null = await prisma.video.findFirst({
+        // If a video already has this exact driveFileId, skip it entirely
+        const alreadyLinked = await prisma.video.findFirst({
           where: { driveFileId: file.id!, workspaceId },
         });
-        if (!existingVideo) {
-          existingVideo = await prisma.video.findFirst({
-            where: { campaignId: campaign.id, fileName: rawName, workspaceId },
-          });
-        }
-        // Fallback: strip brand prefix and normalize variations to match against imported entries.
-        // "insforge custom 3.1" → norm "3.1" matches imported "custom-brief 3.1" (version-extracted match)
-        // "insforge custom-brief 3.10" → exact base name match
-        if (!existingVideo) {
-          const extStripped = extMatch ? rawName.slice(0, rawName.length - extMatch[0].length) : rawName;
-          // Try exact base match first (works for insforge custom-brief N.X → custom-brief N.X)
-          const rawBase = extStripped.replace(/^insforge\s+/i, '').toLowerCase().trim();
+        if (alreadyLinked) continue;
 
-          // Extract version suffix for the "insforge custom N.X → custom-brief N.X" pattern
-          const versionMatch = rawName.match(/custom\s+(\d+\.\d+)/i);
+        // 1. Match by fileName — same raw name means same video
+        let existingVideo: VideoMatch | null = await prisma.video.findFirst({
+          where: { campaignId: campaign.id, fileName: rawName, workspaceId },
+        });
+
+        // 2. Fuzzy match — strip brand prefixes to find imported entries without drive metadata
+        if (!existingVideo) {
+          const rawBase = baseName.replace(/^(insforge|ugc engine)\s+/i, '').toLowerCase().trim();
           const candidates = await prisma.video.findMany({
             where: { campaignId: campaign.id, workspaceId },
             select: { id: true, fileName: true, name: true, driveFileId: true },
@@ -125,20 +120,14 @@ export async function POST(request: NextRequest) {
           });
 
           for (const c of candidates as VideoMatch[]) {
-            if (c.driveFileId && c.driveFileId !== file.id!) continue;
+            // Already linked to a different file — don't touch it
+            if (c.driveFileId) continue;
             const storedBase = (c.fileName ?? c.name ?? '')
               .replace(/\.(mp4|mov|avi|mkv|webm|jpg|jpeg|png|gif)$/i, '')
+              .replace(/^(insforge|ugc engine)\s+/i, '')
               .toLowerCase()
               .trim();
-
-            // Exact match
             if (rawBase === storedBase) { existingVideo = c; break; }
-
-            // Version-extracted match: "insforge custom 3.1" matches "custom-brief 3.1"
-            if (versionMatch) {
-              const storedVersion = (c.fileName ?? c.name ?? '').match(/custom-brief\s+(\d+\.\d+)/i);
-              if (storedVersion && versionMatch[1] === storedVersion[1]) { existingVideo = c; break; }
-            }
           }
         }
 

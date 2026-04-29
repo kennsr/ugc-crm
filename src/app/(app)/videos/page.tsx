@@ -94,6 +94,7 @@ export default function VideosPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [filterCampaign, setFilterCampaign] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({
     name: '', extension: '', campaignId: '', status: 'backlog', notes: '',
     views: '', likes: '', earnings: '', hookType: '', niche: '', format: '',
@@ -344,7 +345,7 @@ export default function VideosPage() {
                         </div>
                       ) : "—"}
                     </td>
-                    <td>
+                    <td className="relative">
                       {editingId === v.id ? (
                         <select
                           className="input w-full text-sm py-1"
@@ -356,8 +357,29 @@ export default function VideosPage() {
                             <option key={s} value={statusKey(s)}>{s}</option>
                           ))}
                         </select>
+                      ) : statusDropdownId === v.id ? (
+                        <select
+                          className="input w-full text-sm py-1"
+                          value={v.status}
+                          autoFocus
+                          onChange={(e) => {
+                            updateVideo.mutate({ id: v.id, status: e.target.value });
+                            setStatusDropdownId(null);
+                          }}
+                          onBlur={() => setStatusDropdownId(null)}
+                        >
+                          {VIDEO_STATUSES.map((s) => (
+                            <option key={s} value={statusKey(s)}>{s}</option>
+                          ))}
+                        </select>
                       ) : (
-                        <span className={`badge ${videoBadgeClass(v.status)}`}>{statusLabel(v.status)}</span>
+                        <button
+                          onClick={() => setStatusDropdownId(v.id)}
+                          className={`badge ${videoBadgeClass(v.status)} cursor-pointer hover:opacity-80`}
+                          title="Click to change status"
+                        >
+                          {statusLabel(v.status)}
+                        </button>
                       )}
                     </td>
                     <td className="text-[var(--text-muted)] text-xs">{formatDate(v.uploadedAt)}</td>
