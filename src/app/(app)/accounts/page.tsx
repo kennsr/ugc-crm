@@ -126,7 +126,6 @@ export default function AccountsPage() {
     }, {
       onSuccess: () => {
         setShowAdd(false);
-        setEditForm({ name: '', username: '', platform: 'tiktok', email: '', campaignId: '', notes: '' });
       },
     });
   }
