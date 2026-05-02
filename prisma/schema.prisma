@@ -118,6 +118,7 @@ model Video {
   aiTag            String?
 
   notes            String?
+  inspo            String?
   driveFileId      String?  // Google Drive file ID
   driveFolderId    String?  // Google Drive folder ID
   driveWebViewLink String?  // Link to open the file in Drive

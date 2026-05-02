@@ -36,6 +36,7 @@ type EditForm = {
   campaignId: string;
   status: string;
   notes: string;
+  inspo: string;
   views: string;
   likes: string;
   earnings: string;
@@ -55,6 +56,7 @@ function VideoTableSkeleton() {
             <th>File</th>
             <th>Ext</th>
             <th>Campaign</th>
+            <th>Inspo</th>
             <th>Status</th>
             <th>Uploaded</th>
             <th className="text-right">Views</th>
@@ -96,13 +98,13 @@ export default function VideosPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({
-    name: '', extension: '', campaignId: '', status: 'backlog', notes: '',
+    name: '', extension: 'mov', campaignId: '', status: 'backlog', notes: '', inspo: '',
     views: '', likes: '', earnings: '', hookType: '', niche: '', format: '',
   });
 
   const [addForm, setAddForm] = useState<Record<string, string>>({
     name: "", fileName: "", extension: "mov", campaignId: "",
-    status: "backlog", notes: "", hookType: "", niche: "", format: "",
+    status: "backlog", notes: "", inspo: "", hookType: "", niche: "", format: "",
   });
 
   const [sortKey, setSortKey] = useState<string>('createdAt');
@@ -147,6 +149,7 @@ export default function VideosPage() {
       campaignId: v.campaignId ?? "",
       status: v.status ?? "backlog",
       notes: v.notes ?? "",
+      inspo: v.inspo ?? "",
       views: String(v.views ?? ""),
       likes: String(v.likes ?? ""),
       earnings: String(v.earnings ?? DEFAULT_VIDEO_PAY_RATE),
@@ -164,6 +167,7 @@ export default function VideosPage() {
       campaignId: editForm.campaignId || null,
       status: editForm.status,
       notes: editForm.notes || null,
+      inspo: editForm.inspo || null,
       views: Number(editForm.views) || 0,
       likes: Number(editForm.likes) || 0,
       earnings: parseFloat(editForm.earnings) || DEFAULT_VIDEO_PAY_RATE,
@@ -182,13 +186,14 @@ export default function VideosPage() {
       campaignId: addForm.campaignId || null,
       status: addForm.status || "backlog",
       notes: addForm.notes || null,
+      inspo: addForm.inspo || null,
       hookType: addForm.hookType || null,
       niche: addForm.niche || null,
       format: addForm.format || null,
     }, {
       onSuccess: () => {
         setShowAdd(false);
-        setAddForm({ name: "", fileName: "", extension: "mov", campaignId: "", status: "backlog", notes: "", hookType: "", niche: "", format: "" });
+        setAddForm({ name: "", fileName: "", extension: "mov", campaignId: "", status: "backlog", notes: "", inspo: "", hookType: "", niche: "", format: "" });
       }
     });
   }
@@ -240,6 +245,7 @@ export default function VideosPage() {
             <input placeholder="Niche" className="input" value={addForm.niche} onChange={(e) => setAddForm({ ...addForm, niche: e.target.value })} />
             <input placeholder="Format" className="input" value={addForm.format} onChange={(e) => setAddForm({ ...addForm, format: e.target.value })} />
             <input placeholder="Notes" className="input col-span-3" value={addForm.notes} onChange={(e) => setAddForm({ ...addForm, notes: e.target.value })} />
+            <input placeholder="Inspo link (e.g. https://tiktok.com/...)" className="input col-span-3" value={addForm.inspo} onChange={(e) => setAddForm({ ...addForm, inspo: e.target.value })} />
             <div className="col-span-3 flex gap-2">
               <button type="submit" disabled={createVideo.isPending} className="btn btn-primary">
                 {createVideo.isPending ? "Saving..." : "Save Video"}
@@ -343,6 +349,19 @@ export default function VideosPage() {
                           <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: v.campaign.color }} />
                           <span className="text-[var(--text-secondary)] text-sm truncate">{v.campaign.brandName}</span>
                         </div>
+                      ) : "—"}
+                    </td>
+                    <td>
+                      {v.inspo ? (
+                        <a
+                          href={v.inspo}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[var(--accent)] hover:underline text-xs truncate block max-w-[120px]"
+                          title={v.inspo}
+                        >
+                          inspo
+                        </a>
                       ) : "—"}
                     </td>
                     <td className="relative">
@@ -462,6 +481,10 @@ export default function VideosPage() {
                         <div className="mt-3">
                           <label className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide block mb-1">Notes</label>
                           <input className="input text-sm py-1" value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} placeholder="Optional notes" disabled={updateVideo.isPending} />
+                        </div>
+                        <div className="mt-3">
+                          <label className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide block mb-1">Inspo Link</label>
+                          <input className="input text-sm py-1" value={editForm.inspo} onChange={(e) => setEditForm({ ...editForm, inspo: e.target.value })} placeholder="https://..." disabled={updateVideo.isPending} />
                         </div>
                       </td>
                     </tr>

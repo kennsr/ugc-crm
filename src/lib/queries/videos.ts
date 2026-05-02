@@ -16,6 +16,7 @@ export type Video = {
   likes: number;
   earnings: number;
   notes?: string | null;
+  inspo?: string | null;
   hookType?: string | null;
   niche?: string | null;
   format?: string | null;

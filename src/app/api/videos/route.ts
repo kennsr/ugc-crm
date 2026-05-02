@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     name, fileName, extension, campaignId, platform,
     status, views, likes, comments, shares, watchTime, rpm, earnings,
     hookType, niche, format, hasBeforeAfter, hasTextOverlay, durationBucket, postedTimeBucket,
-    aiScore, aiTag, notes, driveFileId, driveFolderId,
+    aiScore, aiTag, notes, inspo, driveFileId, driveFolderId,
     driveWebViewLink, thumbnailUrl,
   } = body;
 
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
       watchTime, rpm, earnings: parseFloat(String(earnings)) || DEFAULT_VIDEO_PAY_RATE,
       hookType, niche, format,
       hasBeforeAfter: Boolean(hasBeforeAfter), hasTextOverlay: Boolean(hasTextOverlay),
-      durationBucket, postedTimeBucket, aiScore, aiTag, notes,
+      durationBucket, postedTimeBucket, aiScore, aiTag, notes, inspo,
       driveFileId, driveFolderId,
       driveWebViewLink: driveWebViewLink || null,
       thumbnailUrl: thumbnailUrl || null,
