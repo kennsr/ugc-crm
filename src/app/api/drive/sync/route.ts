@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
         }
 
         if (existingVideo) {
-          // Update drive metadata — preserve user-edited fields
+          // Link to Drive file — never touch the name/title, our DB data takes precedence
           await prisma.video.update({
             where: { id: existingVideo.id },
             data: {
@@ -141,7 +141,6 @@ export async function POST(request: NextRequest) {
               driveFolderId: videosFolderId,
               driveWebViewLink: (file as { webViewLink?: string }).webViewLink || null,
               thumbnailUrl: (file as { thumbnailLink?: string }).thumbnailLink || null,
-              name: baseName, // sync the name from Drive
             },
           });
         } else {

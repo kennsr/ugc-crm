@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
 import { getDriveClient } from '@/lib/drive';
 import { Readable } from 'stream';

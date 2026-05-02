@@ -101,7 +101,7 @@ export default function VideosPage() {
   });
 
   const [addForm, setAddForm] = useState<Record<string, string>>({
-    name: "", fileName: "", extension: "", campaignId: "",
+    name: "", fileName: "", extension: "mov", campaignId: "",
     status: "backlog", notes: "", hookType: "", niche: "", format: "",
   });
 
@@ -188,7 +188,7 @@ export default function VideosPage() {
     }, {
       onSuccess: () => {
         setShowAdd(false);
-        setAddForm({ name: "", fileName: "", extension: "", campaignId: "", status: "backlog", notes: "", hookType: "", niche: "", format: "" });
+        setAddForm({ name: "", fileName: "", extension: "mov", campaignId: "", status: "backlog", notes: "", hookType: "", niche: "", format: "" });
       }
     });
   }
@@ -218,7 +218,7 @@ export default function VideosPage() {
             <option value="">All Campaigns</option>
             {campaigns.map((c) => <option key={c.id} value={c.id}>{c.brandName}</option>)}
           </select>
-          <button onClick={() => setShowAdd(true)} className="btn btn-ghost text-[var(--accent)] text-[11px]" style={{ whiteSpace: 'nowrap' }}>+ Add</button>
+          <button onClick={() => { setShowAdd(true); if (filterCampaign) setAddForm((f) => ({ ...f, campaignId: filterCampaign })); }} className="btn btn-ghost text-[var(--accent)] text-[11px]" style={{ whiteSpace: 'nowrap' }}>+ Add</button>
         </div>
       </div>
 
@@ -228,7 +228,7 @@ export default function VideosPage() {
           <form onSubmit={submitAdd} className="grid grid-cols-3 gap-3">
             <input placeholder="Name" className="input" value={addForm.name} onChange={(e) => setAddForm({ ...addForm, name: e.target.value })} />
             <input placeholder="File name (immutable)" className="input" value={addForm.fileName} onChange={(e) => setAddForm({ ...addForm, fileName: e.target.value })} />
-            <input placeholder="Extension (e.g. mp4)" className="input" value={addForm.extension} onChange={(e) => setAddForm({ ...addForm, extension: e.target.value })} />
+            <input placeholder="Extension (e.g. mov)" className="input" value={addForm.extension} onChange={(e) => setAddForm({ ...addForm, extension: e.target.value })} />
             <select className="input" value={addForm.campaignId} onChange={(e) => setAddForm({ ...addForm, campaignId: e.target.value })}>
               <option value="">Select Campaign</option>
               {campaigns.map((c) => <option key={c.id} value={c.id}>{c.brandName}</option>)}
@@ -459,6 +459,10 @@ export default function VideosPage() {
                         {editForm.status === "posted" && (
                           <p className="text-[10px] text-[var(--accent)] mt-1">Setting status to Posted will set the uploaded date to today.</p>
                         )}
+                        <div className="mt-3">
+                          <label className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide block mb-1">Notes</label>
+                          <input className="input text-sm py-1" value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} placeholder="Optional notes" disabled={updateVideo.isPending} />
+                        </div>
                       </td>
                     </tr>
                   )}
