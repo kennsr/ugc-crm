@@ -114,7 +114,7 @@ export default function AccountsPage() {
     }, { onSuccess: () => setEditingId(null) });
   }
 
-  function submitAdd(e: React.FormEvent) {
+  function submitAdd(e: React.KeyboardEvent | React.FormEvent) {
     e.preventDefault();
     createAccount.mutate({
       name: editForm.name,
@@ -225,18 +225,18 @@ export default function AccountsPage() {
                 <Fragment key={a.id}>
                   <tr className={editingId === a.id ? 'bg-[var(--accent)]/5' : ''}>
                     <td className="font-medium">{editingId === a.id ? (
-                      <input className="input w-full text-sm py-1" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} placeholder="Name" />
+                      <input className="input w-full text-sm py-1" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && saveEdit(a.id)} placeholder="Name" />
                     ) : a.name}</td>
                     <td className="text-[var(--text-secondary)]">{editingId === a.id ? (
-                      <input className="input w-full text-sm py-1" value={editForm.username} onChange={(e) => setEditForm({ ...editForm, username: e.target.value })} placeholder="@username" />
+                      <input className="input w-full text-sm py-1" value={editForm.username} onChange={(e) => setEditForm({ ...editForm, username: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && saveEdit(a.id)} placeholder="@username" />
                     ) : (a.username ? <span className="text-[10px]">@{a.username}</span> : '—')}</td>
                     <td>{editingId === a.id ? (
-                      <select className="input w-full text-sm py-1" value={editForm.platform} onChange={(e) => setEditForm({ ...editForm, platform: e.target.value })}>
+                      <select className="input w-full text-sm py-1" value={editForm.platform} onChange={(e) => setEditForm({ ...editForm, platform: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && saveEdit(a.id)}>
                         {PLATFORMS.map((p) => <option key={p} value={p}>{p.toUpperCase()}</option>)}
                       </select>
                     ) : platformBadge(a.platform)}</td>
                     <td>{editingId === a.id ? (
-                      <select className="input w-full text-sm py-1" value={editForm.campaignId} onChange={(e) => setEditForm({ ...editForm, campaignId: e.target.value })}>
+                      <select className="input w-full text-sm py-1" value={editForm.campaignId} onChange={(e) => setEditForm({ ...editForm, campaignId: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && saveEdit(a.id)}>
                         <option value="">No Campaign</option>
                         {campaigns.map((c) => <option key={c.id} value={c.id}>{c.brandName}</option>)}
                       </select>
@@ -247,7 +247,7 @@ export default function AccountsPage() {
                       </div>
                     ) : '—'}</td>
                     <td className="text-[var(--text-muted)] text-xs max-w-[150px] truncate">{editingId === a.id ? (
-                      <input className="input w-full text-sm py-1" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} placeholder="Email" />
+                      <input className="input w-full text-sm py-1" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && saveEdit(a.id)} placeholder="Email" />
                     ) : (a.email || '—')}</td>
                     <td className="text-[var(--text-muted)] text-xs">{a.createdAt ? format(new Date(a.createdAt), 'MMM d, yyyy') : '—'}</td>
                     <td className="text-right">
@@ -270,7 +270,7 @@ export default function AccountsPage() {
                         <div className="grid grid-cols-6 gap-3">
                           <div className="col-span-2">
                             <label className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide block mb-1">Notes</label>
-                            <input className="input text-sm py-1" value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} placeholder="Optional notes" />
+                            <input className="input text-sm py-1" value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && saveEdit(a.id)} placeholder="Optional notes" />
                           </div>
                         </div>
                       </td>
