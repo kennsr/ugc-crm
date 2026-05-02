@@ -7,6 +7,7 @@ export type Video = {
   extension?: string | null;
   thumbnailUrl?: string | null;
   driveWebViewLink?: string | null;
+  driveFileId?: string | null;
   campaign?: { id: string; brandName: string; color: string };
   campaignId?: string;
   platform: string;

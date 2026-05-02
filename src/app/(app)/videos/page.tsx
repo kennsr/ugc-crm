@@ -32,6 +32,7 @@ import { useCampaigns } from "@/lib/queries/campaigns";
 
 type EditForm = {
   name: string;
+  fileName: string;
   extension: string;
   campaignId: string;
   status: string;
@@ -98,7 +99,7 @@ export default function VideosPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({
-    name: '', extension: 'mov', campaignId: '', status: 'backlog', notes: '', inspo: '',
+    name: '', fileName: '', extension: 'mov', campaignId: '', status: 'backlog', notes: '', inspo: '',
     views: '', likes: '', earnings: '', hookType: '', niche: '', format: '',
   });
 
@@ -145,6 +146,7 @@ export default function VideosPage() {
     setEditingId(v.id);
     setEditForm({
       name: v.name ?? "",
+      fileName: v.fileName ?? "",
       extension: v.extension ?? "",
       campaignId: v.campaignId ?? "",
       status: v.status ?? "backlog",
@@ -163,6 +165,7 @@ export default function VideosPage() {
     updateVideo.mutate({
       id,
       name: editForm.name,
+      fileName: editForm.fileName || null,
       extension: editForm.extension || null,
       campaignId: editForm.campaignId || null,
       status: editForm.status,
@@ -223,7 +226,7 @@ export default function VideosPage() {
             <option value="">All Campaigns</option>
             {campaigns.map((c) => <option key={c.id} value={c.id}>{c.brandName}</option>)}
           </select>
-          <button onClick={() => { setShowAdd(true); if (filterCampaign) setAddForm((f) => ({ ...f, campaignId: filterCampaign })); }} className="btn btn-ghost text-[var(--accent)] text-[11px]" style={{ whiteSpace: 'nowrap' }}>+ Add</button>
+          <button onClick={() => setAddForm((prev) => { setShowAdd(true); return { ...prev, campaignId: filterCampaign || prev.campaignId }; })} className="btn btn-ghost text-[var(--accent)] text-[11px]" style={{ whiteSpace: 'nowrap' }}>+ Add</button>
         </div>
       </div>
 
@@ -232,7 +235,7 @@ export default function VideosPage() {
           <h3 className="mb-3">Add New Video</h3>
           <form onSubmit={submitAdd} className="grid grid-cols-3 gap-3">
             <input placeholder="Name" className="input" value={addForm.name} onChange={(e) => setAddForm({ ...addForm, name: e.target.value })} />
-            <input placeholder="File name (immutable)" className="input" value={addForm.fileName} onChange={(e) => setAddForm({ ...addForm, fileName: e.target.value })} />
+            <input placeholder="File name" className="input" value={addForm.fileName} onChange={(e) => setAddForm({ ...addForm, fileName: e.target.value })} />
             <input placeholder="Extension (e.g. mov)" className="input" value={addForm.extension} onChange={(e) => setAddForm({ ...addForm, extension: e.target.value })} />
             <select className="input" value={addForm.campaignId} onChange={(e) => setAddForm({ ...addForm, campaignId: e.target.value })}>
               <option value="">Select Campaign</option>
@@ -271,8 +274,6 @@ export default function VideosPage() {
                 <SortTh label="Status" sortKey="status" currentKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
                 <SortTh label="Uploaded" sortKey="uploadedAt" currentKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
                 <SortTh label="Created" sortKey="createdAt" currentKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-                <SortTh label="Views" sortKey="views" currentKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right" />
-                <SortTh label="Earnings" sortKey="earnings" currentKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right" />
                 <th></th>
               </tr>
             </thead>
@@ -312,17 +313,18 @@ export default function VideosPage() {
                         </div>
                       )}
                     </td>
-                    <td className="max-w-[200px] truncate" title={v.fileName ?? undefined}>
+                    <td className="max-w-[300px]">
                       {editingId === v.id ? (
                         <input
                           className="input w-full text-sm py-1"
                           value={editForm.name}
                           onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                          title={editForm.name}
                           placeholder="Name"
                           disabled={updateVideo.isPending}
                         />
                       ) : (
-                        <div className="truncate">{v.name || "—"}</div>
+                        <div className="truncate" title={v.name || undefined}>{v.name || "—"}</div>
                       )}
                     </td>
                     <td>
@@ -403,33 +405,6 @@ export default function VideosPage() {
                     </td>
                     <td className="text-[var(--text-muted)] text-xs">{formatDate(v.uploadedAt)}</td>
                     <td className="text-[var(--text-muted)] text-xs">{formatDate((v as Record<string, unknown>).createdAt as string)}</td>
-                    <td>
-                      {editingId === v.id ? (
-                        <input
-                          type="number"
-                          className="input w-20 text-sm py-1 text-right"
-                          value={editForm.views}
-                          onChange={(e) => setEditForm({ ...editForm, views: e.target.value })}
-                          disabled={updateVideo.isPending}
-                        />
-                      ) : (
-                        <span className="text-right text-[var(--text-secondary)] text-sm">{v.views.toLocaleString()}</span>
-                      )}
-                    </td>
-                    <td>
-                      {editingId === v.id ? (
-                        <input
-                          type="number"
-                          step="0.01"
-                          className="input w-24 text-sm py-1 text-right"
-                          value={editForm.earnings}
-                          onChange={(e) => setEditForm({ ...editForm, earnings: e.target.value })}
-                          disabled={updateVideo.isPending}
-                        />
-                      ) : (
-                        <span className="text-right text-sm">${v.earnings.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                      )}
-                    </td>
                     <td className="text-right">
                       {editingId === v.id ? (
                         <div className="flex gap-1 justify-end">
@@ -446,7 +421,7 @@ export default function VideosPage() {
                   </tr>
                   {editingId === v.id && (
                     <tr className="bg-[var(--accent)]/3">
-                      <td colSpan={11} className="px-4 py-3">
+                      <td colSpan={9} className="px-4 py-3">
                         <div className="grid grid-cols-6 gap-3">
                           <div>
                             <label className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide block mb-1">Hook Type</label>
@@ -472,8 +447,11 @@ export default function VideosPage() {
                             </select>
                           </div>
                         </div>
-                        {v.fileName && (
-                          <p className="text-[10px] text-[var(--text-muted)] mt-2 font-mono">File: {v.fileName}</p>
+                        {v.fileName !== undefined && !v.driveFileId && (
+                          <div className="mt-3">
+                            <label className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide block mb-1">File Name</label>
+                            <input className="input text-sm py-1" value={editForm.fileName} onChange={(e) => setEditForm({ ...editForm, fileName: e.target.value })} placeholder="File name" disabled={updateVideo.isPending} />
+                          </div>
                         )}
                         {editForm.status === "posted" && (
                           <p className="text-[10px] text-[var(--accent)] mt-1">Setting status to Posted will set the uploaded date to today.</p>
